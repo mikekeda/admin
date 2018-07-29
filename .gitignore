@@ -1,0 +1,14 @@
+.idea/
+node_modules/
+reports/
+.cache/
+.pytest_cache/
+
+.coverage
+
+*.pyc
+*.sqlite3
+*.rdb
+*.pid
+*.log
+

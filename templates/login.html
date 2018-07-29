@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block body %}
+
+  <div class="">
+    <div class="">
+      <h1 class="center text-uppercase h4">Login</h1>
+    </div>
+    <div class="row">
+      <form class="col s6 offset-s3" method="post">
+        <div class="row">
+          {% for field in form %}
+            <div class="input-field col s12">
+              {% if field.name != 'csrf_token' and field.type != 'SelectField' and field.type != 'SelectMultipleField' %}
+                <input id="{{ field.name }}" name="{{ field.name }}" type="{{ field.widget.input_type }}" value="{{ field.data|default('', True)|e }}" class="validate{% if field.errors %} invalid{% endif %}">
+                <label for="{{ field.name }}" {% if field.errors %} data-error="{{ field.errors|join('. ') }}"{% endif %}{% if field.flags.required %} class="required"{% endif %}>{{ field.label.text }}</label>
+              {% else %}
+                {{ field }}
+                {% if field.name != 'csrf_token' %}
+                  {{ field.label }}
+                {% endif %}
+              {% endif %}
+            </div>
+          {% endfor %}
+          <div class="input-field col s12">
+            <button class="btn waves-effect waves-light right" type="submit" name="action">
+              Login
+              <i class="material-icons right">send</i>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+{% endblock %}

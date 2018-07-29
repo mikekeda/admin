@@ -1,0 +1,25 @@
+{
+  "name": "sass-compiler",
+  "version": "0.0.1",
+  "description": "compille sass",
+  "main": "sass-compiller.js",
+  "watches": {
+    "sass": "sass/**"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "node-sass -wr sass/style.scss -o static/css/ --output-style compressed",
+    "build:postcss": "postcss -wr static/css/ autoprefixer -b 'last 2 versions'",
+    "start": "npm run build:css && npm run build:postcss"
+  },
+  "keywords": [
+    "sass"
+  ],
+  "author": "Mike",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "autoprefixer": "^9.0.1",
+    "node-sass": "^4.9.2",
+    "postcss-cli": "^6.0.0"
+  }
+}
