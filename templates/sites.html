@@ -8,8 +8,9 @@
   <table class="table-list white bordered">
     <thead class="grey darken-2">
       <tr>
+        <th class="no-br-radius white-text" width="50">Status</th>
         <th class="no-br-radius white-text">Name</th>
-        <th class="no-br-radius white-text">Code</th>
+        <th class="no-br-radius white-text">Logs</th>
       </tr>
     </thead>
 
@@ -18,9 +19,13 @@
       <tr>
         <td>
           <div class="status-dot {% if get_item(site, 'status') %}green{% else %}red{% endif %}"></div>
-          <a href="{{ get_item(site, 'url') }}">{{ get_item(site, 'name') }}</a>
         </td>
-        <td>{{ site.code }}</td>
+        <td>
+          <a href="{{ get_item(site, 'url') }}">{{ get_item(site, 'title') }}</a>
+        </td>
+        <td>
+          <a href="/site/{{ get_item(site, 'name') }}/logs">{{ get_item(site, 'logs') }}</a>
+        </td>
       </tr>
       {% endfor %}
     </tbody>

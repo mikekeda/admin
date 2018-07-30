@@ -58,3 +58,10 @@ REDIS_SESSION_CONFIG = {
 }
 
 SITES = json.loads(get_env_var('SITES', json.dumps([])))
+for site in SITES:
+    if not site.get('name'):
+        site['name'] = site['title'].lower().replace(' ', '_')
+    if not site.get('log'):
+        site['logs'] = '{}/{}/error.log'.format(
+            get_env_var('LOG_FOLDER'), site['name']
+        )
