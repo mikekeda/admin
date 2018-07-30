@@ -1,3 +1,4 @@
+import asyncio
 import aiohttp
 import asyncio_redis
 from aiocache import caches
@@ -23,6 +24,15 @@ app.session_interface = None
 
 jinja = SanicJinja2(app)
 app.jinja_env.globals.update(get_item=get_item)
+
+
+async def get_site_status(url: str, session):
+    """ Get site status. """
+    try:
+        async with session.get(url) as resp:
+            return url, resp.status
+    except aiohttp.client_exceptions.ClientConnectorError:
+        return url, 404
 
 
 class Redis:
@@ -90,19 +100,19 @@ async def homepage(request):
     if not request['session'].get('user'):
         return redirect('/login')
 
-    sites = settings.SITES
+    async with aiohttp.ClientSession() as session:
+        tasks = [
+            asyncio.ensure_future(get_site_status(site['url'], session))
+            for site in settings.SITES
+        ]
 
-    for site in sites:
-        site['status'] = False
+        statuses = {key: val for key, val in await asyncio.gather(*tasks)}
 
-        async with aiohttp.ClientSession() as session:
-            try:
-                async with session.get(site['url']) as resp:
-                    site['status'] = resp.status == 200
-            except aiohttp.client_exceptions.ClientConnectorError:
-                pass
+        for site in settings.SITES:
+            site['status'] = statuses.get(site['url']) == 200
 
-    return html(jinja.render_string('sites.html', request, sites=sites))
+    return html(jinja.render_string('sites.html', request,
+                                    sites=settings.SITES))
 
 
 @app.route("/about")
