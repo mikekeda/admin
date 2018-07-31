@@ -118,7 +118,7 @@ async def homepage(request):
                                     sites=settings.SITES.values()))
 
 
-@app.route("/site/<site_name>/logs")
+@app.route("/sites/<site_name>/logs")
 async def logs_page(request, site_name):
     """ View site logs. """
     if not request['session'].get('user'):
@@ -131,7 +131,8 @@ async def logs_page(request, site_name):
     async with aiofiles.open(site['logs'], 'r') as f:
         logs = await f.readlines()
 
-    return html(jinja.render_string('logs.html', request, logs=''.join(logs)))
+    return html(jinja.render_string('logs.html', request, logs=''.join(logs),
+                                    site_name=site_name))
 
 
 @app.route("/about")

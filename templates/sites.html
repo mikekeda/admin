@@ -3,6 +3,7 @@
 {% block title %}Sites{% endblock %}
 
 {% block body %}
+<div class="container my-6">
   <h1 class="center text-uppercase h4">Sites</h1>
 
   <table class="table-list white bordered">
@@ -24,10 +25,11 @@
           <a href="{{ get_item(site, 'url') }}">{{ get_item(site, 'title') }}</a>
         </td>
         <td>
-          <a href="/site/{{ get_item(site, 'name') }}/logs">{{ get_item(site, 'logs') }}</a>
+          <a href="/sites/{{ get_item(site, 'name') }}/logs">logs</a>
         </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
+</div>
 {% endblock %}
