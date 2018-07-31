@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}Logs{% endblock %}
+{% block body %}
+    <div class="container">
+        <h1 class="no-margin text-uppercase h4"><wbr>Logs</h1>
+        <textarea id="logs" disabled>{{ logs }}</textarea>
+    </div>
+    <script type="text/javascript">
+        var textarea = document.getElementById('logs');
+        textarea.scrollTop = textarea.scrollHeight;
+    </script>
+{% endblock %}

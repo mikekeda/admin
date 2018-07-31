@@ -1,8 +1,11 @@
+import os
 import asyncio
+import aiofiles
 import aiohttp
 import asyncio_redis
 from aiocache import caches
 from sanic import Sanic
+from sanic.exceptions import abort
 from sanic.response import html, redirect
 from sanic.views import HTTPMethodView
 from sanic_session import RedisSessionInterface
@@ -103,16 +106,32 @@ async def homepage(request):
     async with aiohttp.ClientSession() as session:
         tasks = [
             asyncio.ensure_future(get_site_status(site['url'], session))
-            for site in settings.SITES
+            for site in settings.SITES.values()
         ]
 
         statuses = {key: val for key, val in await asyncio.gather(*tasks)}
 
-        for site in settings.SITES:
+        for site in settings.SITES.values():
             site['status'] = statuses.get(site['url']) == 200
 
     return html(jinja.render_string('sites.html', request,
-                                    sites=settings.SITES))
+                                    sites=settings.SITES.values()))
+
+
+@app.route("/site/<site_name>/logs")
+async def logs_page(request, site_name):
+    """ View site logs. """
+    if not request['session'].get('user'):
+        return redirect('/login')
+
+    site = settings.SITES.get(site_name)
+    if not site or not os.path.exists(site['logs']):
+        abort(404)
+
+    async with aiofiles.open(site['logs'], 'r') as f:
+        logs = await f.readlines()
+
+    return html(jinja.render_string('logs.html', request, logs=logs))
 
 
 @app.route("/about")

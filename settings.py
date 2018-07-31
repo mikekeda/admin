@@ -65,3 +65,4 @@ for site in SITES:
         site['logs'] = '{}/{}/error.log'.format(
             get_env_var('LOG_FOLDER'), site['name']
         )
+SITES = {site['name']: site for site in SITES}
