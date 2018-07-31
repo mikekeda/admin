@@ -131,7 +131,7 @@ async def logs_page(request, site_name):
     async with aiofiles.open(site['logs'], 'r') as f:
         logs = await f.readlines()
 
-    return html(jinja.render_string('logs.html', request, logs=logs))
+    return html(jinja.render_string('logs.html', request, logs=''.join(logs)))
 
 
 @app.route("/about")
