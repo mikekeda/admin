@@ -4,7 +4,7 @@ aiohttp==3.3.2
 aioredis==1.1.0
 astroid==2.0.2
 async-timeout==3.0.0
--e git://github.com/jonathanslenders/asyncio-redis.git@27882257773d9ad69f3f514d186750bde16e8952#egg=asyncio_redis
+asyncio-redis==0.15.1
 atomicwrites==1.1.5
 attrs==18.1.0
 bcrypt==3.1.4
