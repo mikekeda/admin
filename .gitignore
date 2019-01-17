@@ -5,6 +5,7 @@ reports/
 .pytest_cache/
 
 .coverage
+.DS_Store
 
 *.pyc
 *.sqlite3

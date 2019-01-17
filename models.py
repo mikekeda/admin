@@ -15,7 +15,7 @@ def hash_password(value: str) -> str:
 
 async def authenticate(username: str, password: str) -> object:
     """ If the given credentials are valid, return a User object. """
-    user = User.get(username=username)
+    user = User.get_or_none(username=username)
     if user and user.password == hash_password(password):
         return user
 
