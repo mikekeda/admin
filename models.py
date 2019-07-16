@@ -1,10 +1,9 @@
 import datetime
 from bcrypt import hashpw
-from peewee import PostgresqlDatabase, Model, CharField, DateTimeField
+
+from main import db
 
 import settings
-
-database = PostgresqlDatabase(**settings.DB_CONFIG)
 
 
 def hash_password(value: str) -> str:
@@ -15,7 +14,7 @@ def hash_password(value: str) -> str:
 
 async def authenticate(username: str, password: str) -> object:
     """ If the given credentials are valid, return a User object. """
-    user = User.get_or_none(username=username)
+    user = await User.query.gino.first_or_404(username=username)
     if user and user.password == hash_password(password):
         return user
 
@@ -30,25 +29,22 @@ def logout(request):
     return request['session'].pop('user', None)
 
 
-class PasswordField(CharField):
-    def db_value(self, value):
-        """Convert the python value for storage in the database."""
-        return hash_password(value)
-
-
-class User(Model):
+class User(db.Model):
     """ User model. """
+    __tablename__ = 'user'
 
-    password = PasswordField()
-    last_login = DateTimeField(null=True)
-    username = CharField(max_length=64, unique=True)
-    first_name = CharField(max_length=64, null=True)
-    last_name = CharField(max_length=64, null=True)
-    email = CharField(max_length=64, unique=True)
-    date_joined = DateTimeField(default=datetime.datetime.now)
+    id = db.Column(db.Integer, primary_key=True)
+    password = db.Column(db.String(255), nullable=False)
+    last_login = db.Column(db.DateTime)
+    username = db.Column(db.String(64), nullable=False, unique=True)
+    first_name = db.Column(db.String(64))
+    last_name = db.Column(db.String(64))
+    email = db.Column(db.String(64), nullable=False, unique=True)
+    date_joined = db.Column(db.DateTime, nullable=False,
+                            default=datetime.datetime.utcnow)
 
-    class Meta:
-        database = database
+    def __init__(self, *args, **kwargs):
+        if 'password' in kwargs:
+            kwargs['password'] = hash_password(kwargs['password'])
 
-
-MODELS = [User]
+        super().__init__(*args, **kwargs)

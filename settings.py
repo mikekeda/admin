@@ -30,14 +30,6 @@ def get_env_var(name: str, default: str = '') -> str:
 SECRET_KEY = get_env_var('SECRET_KEY', '$2b$12$MWTgOhUlHUPKLkL0MO65UO')
 LOGIN_REDIRECT_URL = '/'
 
-
-DB_CONFIG = {
-    'user': get_env_var('DB_USER', 'admin_admin'),
-    'password': get_env_var('DB_PASSWORD', 'admin_admin_pasWQ27$'),
-    'host': get_env_var('DB_HOST', '127.0.0.1'),
-    'database': get_env_var('DB_NAME', 'admin')
-}
-
 REDIS_CACHE_CONFIG = {
     'default': {
         'cache': 'aiocache.RedisCache',
@@ -48,13 +40,6 @@ REDIS_CACHE_CONFIG = {
             'class': 'aiocache.serializers.PickleSerializer'
         }
     }
-}
-
-REDIS_SESSION_CONFIG = {
-    'host': 'localhost',
-    'port': 6379,
-    'db': 8,
-    'poolsize': 10
 }
 
 SITES = json.loads(get_env_var('SITES', json.dumps([])))
