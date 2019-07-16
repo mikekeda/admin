@@ -1,7 +1,7 @@
 import datetime
 from bcrypt import hashpw
 
-from main import db
+from app import db
 
 import settings
 

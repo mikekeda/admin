@@ -10,7 +10,7 @@ from sanic.views import HTTPMethodView
 import settings
 from models import User, authenticate, login, logout
 from forms import LoginForm
-from main import app, jinja
+from app import app, jinja
 
 
 async def get_site_status(url: str, session):
