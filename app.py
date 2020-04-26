@@ -49,6 +49,7 @@ async def init_cache(_app, _):
 async def close_redis_connections(_app, _):
     """ Close redis connections. """
     _app.redis.close()
+    await _app.redis.wait_closed()
 
 
 @app.middleware('request')
