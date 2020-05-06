@@ -119,7 +119,7 @@ if __name__ == "__main__":
     else:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
             try:
-                sock.bind('/uwsgi/synergy.sock')
+                sock.bind('/uwsgi/admin.sock')
                 app.run(sock=sock, access_log=False)
             except OSError:
                 pass
