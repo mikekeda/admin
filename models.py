@@ -14,7 +14,7 @@ def hash_password(value: str) -> str:
 
 async def authenticate(username: str, password: str) -> object:
     """ If the given credentials are valid, return a User object. """
-    user = await User.query.gino.first_or_404(username=username)
+    user = await User.query.gino.first(username=username)
     if user and user.password == hash_password(password):
         return user
 
