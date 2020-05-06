@@ -10,7 +10,7 @@ def get_env_var(name: str, default: str = '') -> str:
     try:
         name = '_'.join([SITE_ENV_PREFIX, name])
         res = os.environ.get(name)
-        if res:
+        if res is not None:
             # Check env variable (Jenkins build).
             return res
         else:

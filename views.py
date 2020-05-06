@@ -1,5 +1,6 @@
 import asyncio
 import os
+import socket
 
 from aiohttp import ClientSession, ClientConnectorError
 import aiofiles
@@ -113,4 +114,12 @@ app.add_route(LoginView.as_view(), '/login')
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    if app.config['DEBUG']:
+        app.run(host="0.0.0.0", port=8000, debug=True)
+    else:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+            try:
+                sock.bind('/uwsgi/synergy.sock')
+                app.run(sock=sock, access_log=False)
+            except OSError:
+                pass
