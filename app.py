@@ -15,6 +15,7 @@ from template_tags import get_item
 
 app = Sanic(__name__)
 app.config['DEBUG'] = bool(get_env_var('DEBUG', 'True'))
+app.config['SOCKET_FILE'] = get_env_var('SOCKET_FILE', '/temp/admin.sock')
 app.config['SECRET_KEY'] = settings.SECRET_KEY
 app.config['DB_USE_CONNECTION_FOR_REQUEST'] = False
 app.config['DB_USER'] = get_env_var('DB_USER', 'admin_admin')
