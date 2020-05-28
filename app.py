@@ -1,10 +1,10 @@
 from collections import namedtuple
-import traceback
 
 import aioredis
 from aiocache import caches
 from gino import Gino
 from sanic import Sanic
+from sanic.log import logger
 from sanic_session import Session, AIORedisSessionInterface
 from sanic_jinja2 import SanicJinja2
 from sqlalchemy.engine.url import URL
@@ -85,20 +85,13 @@ async def close_redis_connections(_app, _):
 async def add_session_to_request(request):
     """ Set user value for templates. """
     conn = await db.acquire(lazy=True)
-    if hasattr(request, "ctx"):
-        request.ctx.connection = conn
-    else:
-        request["connection"] = conn
-
-    request['user'] = request['session'].get('user')
+    request.ctx.connection = conn
+    request.ctx.user = request.ctx.session.get('user')
 
 
 @app.middleware("response")
 async def on_response(request, _):
-    if hasattr(request, "ctx"):
-        conn = getattr(request.ctx, "connection", None)
-    else:
-        conn = request.pop("connection", None)
+    conn = getattr(request.ctx, "connection", None)
     if conn is not None:
         await conn.release()
 
@@ -109,7 +102,7 @@ async def exception_handler(request, exception: Exception, **__):
     status_code = getattr(exception, "status_code", 500)
 
     if status_code == 500:
-        print("\n".join([str(exception.args), traceback.format_exc()]))
+        logger.exception(exception)
 
     return jinja.render(
         'error.html',

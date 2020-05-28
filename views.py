@@ -24,18 +24,9 @@ async def get_site_status(url: str, session):
         return url, 404
 
 
-async def get_user(request):
-    request['user'] = None
-    user_dict = request['session'].get('user')
-    if user_dict:
-        request['user'] = User.get(id=user_dict['id'])
-
-    return request['user']
-
-
 @app.route("/")
 async def homepage(request):
-    if not request['session'].get('user'):
+    if not request.ctx.session.get('user'):
         return redirect('/login')
 
     async with ClientSession() as session:
@@ -56,7 +47,7 @@ async def homepage(request):
 @app.route("/sites/<site_name>/logs")
 async def logs_page(request, site_name):
     """ View site logs. """
-    if not request['session'].get('user'):
+    if not request.ctx.session.get('user'):
         return redirect('/login')
 
     site = settings.SITES.get(site_name)
@@ -87,7 +78,7 @@ class LoginView(HTTPMethodView):
     # noinspection PyMethodMayBeStatic
     async def get(self, request):
         """ User login form. """
-        if request['session'].get('user'):
+        if request.ctx.session.get('user'):
             return redirect(settings.LOGIN_REDIRECT_URL)
 
         form = LoginForm(request)
@@ -100,8 +91,7 @@ class LoginView(HTTPMethodView):
         form = LoginForm(request)
 
         if form.validate():
-            user = await authenticate(form.data['username'],
-                                      form.data['password'])
+            user = await authenticate(form.data['username'], form.data['password'])
             if user:
                 login(request, user)
                 return redirect(settings.LOGIN_REDIRECT_URL)
