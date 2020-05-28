@@ -21,9 +21,9 @@
           <li class="{% if request.path == '/about' %}active{% endif %}">
             <a href="/about" class="{% if request.path == '/about' %}active{% else %}grey-text{% endif %}">About</a>
           </li>
-          {% if request.user %}
+          {% if request.ctx.user %}
           <li class="{% if request.path == '/user' %}active{% endif %}">
-            <a href="/user" class="{% if request.path == '/user' %}active{% else %}grey-text{% endif %}">{{ get_item(request.user, 'username') }}</a>
+            <a href="/user" class="{% if request.path == '/user' %}active{% else %}grey-text{% endif %}">{{ get_item(request.ctx.user, 'username') }}</a>
           </li>
           <li class="{% if request.path == '/logout' %}active{% endif %}">
             <a href="/logout" class="{% if request.path == '/logout' %}active{% else %}grey-text{% endif %}">Logout</a>

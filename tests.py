@@ -45,7 +45,7 @@ def test_home_page(setup):
     request, response = app.test_client.get('/', allow_redirects=False)
     assert response.status == 302
     assert response.headers["Location"] == '/login'
-    assert request['session'].get('user') is None
+    assert request.ctx.session.get('user') is None
 
 
 def test_login_page(setup):
@@ -64,7 +64,7 @@ def test_login_page(setup):
         allow_redirects=False
     )
     assert response.status == 302
-    assert request['session'].get('user', {}).get('username') == test_username
+    assert request.ctx.session.get('user', {}).get('username') == test_username
 
 
 def test_about_page(setup):

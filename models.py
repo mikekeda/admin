@@ -21,12 +21,12 @@ async def authenticate(username: str, password: str) -> object:
 
 def login(request, user) -> None:
     """ Store user id and username in the session. """
-    request['session']['user'] = {'id': user.id, 'username': user.username}
+    request.ctx.session['user'] = {'id': user.id, 'username': user.username}
 
 
 def logout(request):
     """ Remove user id and username from the session. """
-    return request['session'].pop('user', None)
+    return request.ctx.session.pop('user', None)
 
 
 class User(db.Model):

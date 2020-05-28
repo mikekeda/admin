@@ -20,6 +20,8 @@
                 {{ field }}
                 {% if field.name != 'csrf_token' %}
                   {{ field.label }}
+                {% elif field.errors %}
+                  <span class="helper-text red-text text-darken-4">{{ field.errors|join('. ') }}</span>
                 {% endif %}
               {% endif %}
             </div>
