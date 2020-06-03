@@ -1,6 +1,8 @@
 import datetime
 from bcrypt import hashpw
 
+from sanic_session.base import SessionDict
+
 from app import db
 
 import settings
@@ -26,7 +28,8 @@ def login(request, user) -> None:
 
 def logout(request):
     """ Remove user id and username from the session. """
-    return request.ctx.session.pop('user', None)
+    request.ctx.session = SessionDict(sid=request.ctx.session.sid)  # clear session
+    request.ctx.session.modified = True  # mark as modified to update sid in cookies
 
 
 class User(db.Model):
