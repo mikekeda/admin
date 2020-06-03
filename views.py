@@ -10,7 +10,7 @@ from sanic.response import html, redirect
 from sanic.views import HTTPMethodView
 
 import settings
-from models import User, authenticate, login, logout
+from models import authenticate, login, logout
 from forms import LoginForm
 from app import app, jinja
 
