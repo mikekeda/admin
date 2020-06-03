@@ -28,10 +28,6 @@ app.static('/static', './static')
 db = Gino()
 
 # Set jinja_env and session_interface to None to avoid code style warning.
-app.jinja_env = None
-app.session_interface = None
-
-# Set jinja_env and session_interface to None to avoid code style warning.
 app.jinja_env = namedtuple('JinjaEnv', ['globals'])({})
 
 jinja = SanicJinja2(app)

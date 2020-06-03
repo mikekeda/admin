@@ -1,9 +1,11 @@
 import datetime
+import uuid
+
 from bcrypt import hashpw
 
 from sanic_session.base import SessionDict
 
-from app import db
+from app import db, session
 
 import settings
 
@@ -21,9 +23,14 @@ async def authenticate(username: str, password: str) -> object:
         return user
 
 
-def login(request, user) -> None:
+async def login(request, user) -> None:
     """ Store user id and username in the session. """
     request.ctx.session['user'] = {'id': user.id, 'username': user.username}
+
+    # Refresh sid.
+    old_sid = session.interface.prefix + request.ctx.session.sid
+    request.ctx.session.sid = uuid.uuid4().hex  # generate new sid
+    await session.interface._delete_key(old_sid)  # delete old record from datastore
 
 
 def logout(request):

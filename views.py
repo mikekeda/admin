@@ -93,7 +93,7 @@ class LoginView(HTTPMethodView):
         if form.validate():
             user = await authenticate(form.data['username'], form.data['password'])
             if user:
-                login(request, user)
+                await login(request, user)
                 return redirect(settings.LOGIN_REDIRECT_URL)
             else:
                 form.username.errors.append('Not valid username or password!')
