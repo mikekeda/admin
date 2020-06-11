@@ -31,7 +31,7 @@ async def homepage(request):
 
     async with ClientSession() as session:
         tasks = [
-            asyncio.ensure_future(get_site_status(site['url'], session))
+            get_site_status(site['url'], session)
             for site in settings.SITES.values()
         ]
 
