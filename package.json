@@ -1,7 +1,7 @@
 {
   "name": "sass-compiler",
   "version": "0.0.1",
-  "description": "compille sass",
+  "description": "compile sass",
   "main": "sass-compiller.js",
   "watches": {
     "sass": "sass/**"
@@ -18,8 +18,8 @@
   "author": "Mike",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "autoprefixer": "^9.0.1",
-    "node-sass": "^4.9.2",
-    "postcss-cli": "^6.0.0"
+    "autoprefixer": "^9.8.6",
+    "node-sass": "^4.14.1",
+    "postcss-cli": "^6.1.3"
   }
 }
