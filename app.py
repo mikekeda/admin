@@ -38,7 +38,7 @@ session = Session()
 
 @app.listener('before_server_start')
 async def init_cache(_app, loop):
-    """ Initialize db connections, session_interface and cache. """
+    """Initialize db connections, session_interface and cache."""
     if _app.config.get("DB_DSN"):
         dsn = app.config.DB_DSN
     else:
@@ -71,7 +71,7 @@ async def init_cache(_app, loop):
 
 @app.listener('after_server_stop')
 async def close_redis_connections(_app, _):
-    """ Close db and redis connections. """
+    """Close db and redis connections."""
     await db.pop_bind().close()
     _app.redis.close()
     await _app.redis.wait_closed()
@@ -79,7 +79,7 @@ async def close_redis_connections(_app, _):
 
 @app.middleware('request')
 async def add_session_to_request(request):
-    """ Set user value for templates. """
+    """Set user value for templates."""
     conn = await db.acquire(lazy=True)
     request.ctx.connection = conn
     request.ctx.user = request.ctx.session.get('user')
@@ -94,7 +94,7 @@ async def on_response(request, _):
 
 @app.exception(Exception)
 async def exception_handler(request, exception: Exception, **__):
-    """ Exception handler returns error in json format. """
+    """Exception handler returns error in json format."""
     status_code = getattr(exception, "status_code", 500)
 
     if status_code == 500:

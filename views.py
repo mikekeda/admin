@@ -16,7 +16,7 @@ from app import app, jinja
 
 
 async def get_site_status(url: str, session):
-    """ Get site status. """
+    """Get site status."""
     try:
         async with session.get(url) as resp:
             return url, resp.status
@@ -46,7 +46,7 @@ async def homepage(request):
 
 @app.route("/sites/<site_name>/logs")
 async def logs_page(request, site_name):
-    """ View site logs. """
+    """View site logs."""
     if not request.ctx.session.get('user'):
         return redirect('/login')
 
@@ -55,7 +55,7 @@ async def logs_page(request, site_name):
         abort(404)
 
     async with aiofiles.open(site['logs'], 'r') as f:
-        logs = await f.readlines()
+        logs = (await f.readlines())[-10000:]  # last 10000 lines
 
     return html(jinja.render_string('logs.html', request, logs=''.join(logs),
                                     site_name=site_name))
@@ -63,13 +63,13 @@ async def logs_page(request, site_name):
 
 @app.route("/about")
 async def about_page(request):
-    """ About page. """
+    """About page."""
     return html(jinja.render_string('about.html', request))
 
 
 @app.route("/logout")
 async def logout_page(request):
-    """ Logout page. """
+    """Logout page."""
     logout(request)
     return redirect(settings.LOGIN_REDIRECT_URL)
 
@@ -77,7 +77,7 @@ async def logout_page(request):
 class LoginView(HTTPMethodView):
     # noinspection PyMethodMayBeStatic
     async def get(self, request):
-        """ User login form. """
+        """User login form."""
         if request.ctx.session.get('user'):
             return redirect(settings.LOGIN_REDIRECT_URL)
 
@@ -87,7 +87,7 @@ class LoginView(HTTPMethodView):
 
     # noinspection PyMethodMayBeStatic
     async def post(self, request):
-        """ Submit for User login form. """
+        """Submit for User login form."""
         form = LoginForm(request)
 
         if form.validate():

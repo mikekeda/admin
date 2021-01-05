@@ -11,20 +11,20 @@ import settings
 
 
 def hash_password(value: str) -> str:
-    """ Hash user password to store hash in a database. """
+    """Hash user password to store hash in a database."""
     return hashpw(value.encode('utf-8'), settings.SECRET_KEY.encode(
         'utf-8')).decode("utf-8")
 
 
 async def authenticate(username: str, password: str) -> object:
-    """ If the given credentials are valid, return a User object. """
+    """If the given credentials are valid, return a User object."""
     user = await User.query.gino.first(username=username)
     if user and user.password == hash_password(password):
         return user
 
 
 async def login(request, user) -> None:
-    """ Store user id and username in the session. """
+    """Store user id and username in the session."""
     request.ctx.session['user'] = {'id': user.id, 'username': user.username}
 
     # Refresh sid.
@@ -34,13 +34,13 @@ async def login(request, user) -> None:
 
 
 def logout(request):
-    """ Remove user id and username from the session. """
+    """Remove user id and username from the session."""
     request.ctx.session = SessionDict(sid=request.ctx.session.sid)  # clear session
     request.ctx.session.modified = True  # mark as modified to update sid in cookies
 
 
 class User(db.Model):
-    """ User model. """
+    """User model."""
     __tablename__ = 'user'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -54,6 +54,7 @@ class User(db.Model):
                             default=datetime.datetime.utcnow)
 
     def __init__(self, *args, **kwargs):
+        """Hash password."""
         if 'password' in kwargs:
             kwargs['password'] = hash_password(kwargs['password'])
 
