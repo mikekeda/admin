@@ -23,7 +23,6 @@ DB_URL = "asyncpg://{}:{}@{}:5432/{}".format(
 @pytest.yield_fixture
 async def setup():
     """Create test databases and tables for tests and drop them after."""
-
     await db.set_bind(DB_URL)
 
     await db.gino.drop_all()
