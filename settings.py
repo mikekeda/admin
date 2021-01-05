@@ -6,7 +6,7 @@ SITE_ENV_PREFIX = 'ADMIN'
 
 
 def get_env_var(name: str, default: str = '') -> str:
-    """ Get all sensitive data from google vm custom metadata. """
+    """Get all sensitive data from google vm custom metadata."""
     try:
         name = '_'.join([SITE_ENV_PREFIX, name])
         res = os.environ.get(name)
