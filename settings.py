@@ -29,6 +29,7 @@ def get_env_var(name: str, default: str = '') -> str:
 
 SECRET_KEY = get_env_var('SECRET_KEY', '$2b$12$MWTgOhUlHUPKLkL0MO65UO')
 LOGIN_REDIRECT_URL = '/'
+API_KEY_HEADER = "Authorization"
 
 REDIS_CACHE_CONFIG = {
     'default': {
