@@ -107,9 +107,9 @@ def api_authentication():
             if user:
                 await login(request, user)
                 return await f(request, *args, **kwargs)
-            else:
-                # the user is not authorized.
-                return sanic_json({'status': 'not_authorized'}, 403)
+
+            # User is not authorized.
+            return sanic_json({'status': 'not_authorized'}, 403)
         return decorated_function
     return decorator
 
