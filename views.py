@@ -1,24 +1,46 @@
 import asyncio
 import os
 import socket
+import uuid
+from functools import wraps
+from typing import Tuple
 
-from aiohttp import ClientSession, ClientConnectorError
 import aiofiles
+from aiohttp import ClientConnectorError, ClientSession
 from sanic.exceptions import abort
 from sanic.log import logger
-from sanic.response import html, redirect
+from sanic.response import html
+from sanic.response import json as sanic_json
+from sanic.response import redirect
 from sanic.views import HTTPMethodView
+from sanic_session.base import SessionDict
 
 import settings
-from models import authenticate, login, logout
+from app import app, jinja, session
 from forms import LoginForm
-from app import app, jinja
+from models import APIKey, authenticate
 
 
-async def get_site_status(url: str, session):
+async def login(request, user) -> None:
+    """Store user id and username in the session."""
+    request.ctx.session['user'] = {'id': user.id, 'username': user.username}
+
+    # Refresh sid.
+    old_sid = session.interface.prefix + request.ctx.session.sid
+    request.ctx.session.sid = uuid.uuid4().hex  # generate new sid
+    await session.interface._delete_key(old_sid)  # delete old record from datastore
+
+
+def logout(request) -> None:
+    """Remove user id and username from the session."""
+    request.ctx.session = SessionDict(sid=request.ctx.session.sid)  # clear session
+    request.ctx.session.modified = True  # mark as modified to update sid in cookies
+
+
+async def get_site_status(url: str, _session: ClientSession) -> Tuple[str, int]:
     """Get site status."""
     try:
-        async with session.get(url) as resp:
+        async with _session.get(url) as resp:
             return url, resp.status
     except ClientConnectorError:
         return url, 404
@@ -29,9 +51,9 @@ async def homepage(request):
     if not request.ctx.session.get('user'):
         return redirect('/login')
 
-    async with ClientSession() as session:
+    async with ClientSession() as _session:
         tasks = [
-            get_site_status(site['url'], session)
+            get_site_status(site['url'], _session)
             for site in settings.SITES.values()
         ]
 
@@ -72,6 +94,32 @@ async def logout_page(request):
     """Logout page."""
     logout(request)
     return redirect(settings.LOGIN_REDIRECT_URL)
+
+
+def api_authentication():
+    """Api authentication decorator."""
+    def decorator(f):
+        @wraps(f)
+        async def decorated_function(request, *args, **kwargs):
+            token = request.headers.get(settings.API_KEY_HEADER)
+            user = await APIKey.authenticate(token)
+
+            if user:
+                await login(request, user)
+                return await f(request, *args, **kwargs)
+            else:
+                # the user is not authorized.
+                return sanic_json({'status': 'not_authorized'}, 403)
+        return decorated_function
+    return decorator
+
+
+@app.route("/api", methods={"POST"})
+@api_authentication()
+async def api_page(request):
+    """Api page."""
+    # TODO[Mike] Do something!
+    return sanic_json({})
 
 
 class LoginView(HTTPMethodView):

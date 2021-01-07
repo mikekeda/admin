@@ -1,13 +1,13 @@
 import datetime
-import uuid
+import secrets
+import string
+from typing import Optional, Tuple
 
 from bcrypt import hashpw
-
-from sanic_session.base import SessionDict
-
-from app import db, session
+from sqlalchemy.sql import and_, or_
 
 import settings
+from app import db
 
 
 def hash_password(value: str) -> str:
@@ -16,27 +16,11 @@ def hash_password(value: str) -> str:
         'utf-8')).decode("utf-8")
 
 
-async def authenticate(username: str, password: str) -> object:
+async def authenticate(username: str, password: str) -> "User":
     """If the given credentials are valid, return a User object."""
     user = await User.query.gino.first(username=username)
     if user and user.password == hash_password(password):
         return user
-
-
-async def login(request, user) -> None:
-    """Store user id and username in the session."""
-    request.ctx.session['user'] = {'id': user.id, 'username': user.username}
-
-    # Refresh sid.
-    old_sid = session.interface.prefix + request.ctx.session.sid
-    request.ctx.session.sid = uuid.uuid4().hex  # generate new sid
-    await session.interface._delete_key(old_sid)  # delete old record from datastore
-
-
-def logout(request):
-    """Remove user id and username from the session."""
-    request.ctx.session = SessionDict(sid=request.ctx.session.sid)  # clear session
-    request.ctx.session.modified = True  # mark as modified to update sid in cookies
 
 
 class User(db.Model):
@@ -59,3 +43,58 @@ class User(db.Model):
             kwargs['password'] = hash_password(kwargs['password'])
 
         super().__init__(*args, **kwargs)
+
+
+class APIKey(db.Model):
+    """API keys model."""
+    __tablename__ = "api_keys"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user = db.Column(db.Integer, db.ForeignKey("user.id"))
+    prefix = db.Column(db.String(8), nullable=False, unique=True)
+    hashed_key = db.Column(db.String(100), nullable=False)
+    created = db.Column(db.DateTime, default=datetime.datetime.now)
+    name = db.Column(db.String(50), nullable=False,
+                     doc="A free-form name for the API key. Need not be unique. 50 characters max.")
+    revoked = db.Column(db.Boolean(), default=False,
+                        doc="If the API key is revoked, clients cannot use it anymore. (This cannot be undone.)")
+    expiry_date = db.Column(db.DateTime, doc="Once API key expires, clients cannot use it anymore.")
+
+    @classmethod
+    async def authenticate(cls, token: str) -> Optional[User]:
+        """Get user by api key."""
+        if not token:
+            return None
+
+        prefix, _, key = token.partition(".")
+        api_key = await cls.load(user=User).query.where(and_(
+            cls.prefix == prefix,
+            cls.revoked.is_(False),
+            or_(
+                cls.expiry_date >= datetime.datetime.now(),
+                cls.expiry_date.is_(None),
+            ),
+        )).gino.first()
+        if api_key and api_key.hashed_key == hash_password(key):
+            return api_key.user
+
+        return None
+
+    @staticmethod
+    def _get_secure_random_string(length) -> str:
+        """Generate random string."""
+        secure_str = ''.join((secrets.choice(string.ascii_letters) for _ in range(length)))
+        return secure_str
+
+    @classmethod
+    async def create_key(cls, user: User, name: str) -> Tuple["APIKey", str]:
+        """Create api key."""
+        prefix = cls._get_secure_random_string(8)
+        key = cls._get_secure_random_string(32)
+        api_key = await cls.create(
+            user=user,
+            prefix=prefix,
+            hashed_key=hash_password(key),
+            name=name,
+        )
+        return api_key, key
