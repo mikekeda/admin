@@ -15,10 +15,10 @@ from sanic.response import redirect
 from sanic.views import HTTPMethodView
 from sanic_session.base import SessionDict
 
-import settings
 from admin.app import app, jinja, session
 from admin.forms import LoginForm
-from admin.models import APIKey, authenticate, Repo
+from admin.models import APIKey, Repo, authenticate
+from admin.settings import API_KEY_HEADER, LOGIN_REDIRECT_URL, get_env_var
 
 
 async def login(request, user) -> None:
@@ -73,7 +73,7 @@ async def logs_page(request, repo_name):
         return redirect('/login')
 
     repo = await Repo.query.gino.first(name=repo_name)
-    logs = f"{settings.get_env_var('LOG_FOLDER')}/{repo.name}/error.log"
+    logs = f"{get_env_var('LOG_FOLDER')}/{repo.name}/error.log"
     if not repo or not os.path.exists(logs):
         abort(404)
 
@@ -96,7 +96,7 @@ async def about_page(request):
 async def logout_page(request):
     """Logout page."""
     logout(request)
-    return redirect(settings.LOGIN_REDIRECT_URL)
+    return redirect(LOGIN_REDIRECT_URL)
 
 
 def api_authentication():
@@ -104,7 +104,7 @@ def api_authentication():
     def decorator(f):
         @wraps(f)
         async def decorated_function(request, *args, **kwargs):
-            token = request.headers.get(settings.API_KEY_HEADER)
+            token = request.headers.get(API_KEY_HEADER)
             user = await APIKey.authenticate(token)
 
             if user:
@@ -130,7 +130,7 @@ class LoginView(HTTPMethodView):
     async def get(self, request):
         """User login form."""
         if request.ctx.session.get('user'):
-            return redirect(settings.LOGIN_REDIRECT_URL)
+            return redirect(LOGIN_REDIRECT_URL)
 
         form = LoginForm(request)
 
@@ -145,7 +145,7 @@ class LoginView(HTTPMethodView):
             user = await authenticate(form.data['username'], form.data['password'])
             if user:
                 await login(request, user)
-                return redirect(settings.LOGIN_REDIRECT_URL)
+                return redirect(LOGIN_REDIRECT_URL)
             else:
                 form.username.errors.append('Not valid username or password!')
 
