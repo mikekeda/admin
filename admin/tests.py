@@ -7,7 +7,7 @@ if os.environ.get('ADMIN_DB_NAME') is None:
 
 from admin.models import User, db
 from admin.views import app
-from settings import get_env_var
+from admin.settings import get_env_var
 
 test_username = 'test_user_1'
 test_password = 'qwerty'

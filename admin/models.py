@@ -6,13 +6,13 @@ from typing import Optional, Tuple
 from bcrypt import hashpw
 from sqlalchemy.sql import and_, or_
 
-import settings
 from admin.app import db
+from admin.settings import SECRET_KEY
 
 
 def hash_password(value: str) -> str:
     """Hash user password to store hash in a database."""
-    return hashpw(value.encode('utf-8'), settings.SECRET_KEY.encode(
+    return hashpw(value.encode('utf-8'), SECRET_KEY.encode(
         'utf-8')).decode("utf-8")
 
 
