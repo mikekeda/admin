@@ -1,5 +1,6 @@
 import asyncio
 import os
+import time
 import uuid
 from functools import wraps
 from typing import Tuple
@@ -35,13 +36,16 @@ def logout(request) -> None:
     request.ctx.session.modified = True  # mark as modified to update sid in cookies
 
 
-async def get_site_status(url: str, _session: ClientSession) -> Tuple[str, int]:
+async def get_site_status(url: str, _session: ClientSession) -> Tuple[int, int]:
     """Get site status."""
+    start = time.monotonic()
     try:
         async with _session.get(url) as resp:
-            return url, resp.status
+            status = resp.status
     except ClientConnectorError:
-        return url, 404
+        status = 404
+
+    return status, round((time.monotonic() - start) * 1000)
 
 
 @app.route("/")
@@ -51,15 +55,14 @@ async def homepage(request):
 
     async with ClientSession() as _session:
         repos = await Repo.query.gino.all()
-        tasks = [
+        statuses = await asyncio.gather(*[
             get_site_status(repo.url, _session)
             for repo in repos
-        ]
+        ])
 
-        statuses = {key: val for key, val in await asyncio.gather(*tasks)}
-
-        for repo in repos:
-            repo.status = statuses.get(repo.url) == 200
+        for i, repo in enumerate(repos):
+            repo.status = statuses[i][0] == 200
+            repo.elapsed = statuses[i][1]
 
     return html(jinja.render_string('sites.html', request, repos=repos))
 

@@ -1,16 +1,16 @@
 {% extends 'base.html' %}
 
 {% block title %}Sites{% endblock %}
+{% block page_title %}Sites{% endblock %}
 
 {% block body %}
-<div class="container my-6">
-  <h1 class="center text-uppercase h4">Sites</h1>
-
+<div class="container my-5">
   <table class="table-list white bordered">
     <thead class="grey darken-2">
       <tr>
         <th class="no-br-radius white-text" width="50">Status</th>
         <th class="no-br-radius white-text">Name</th>
+        <th class="no-br-radius white-text">Ping (ms)</th>
         <th class="no-br-radius white-text">Codacy Badge</th>
         <th class="no-br-radius white-text">Requirements Status</th>
         <th class="no-br-radius white-text">Logs</th>
@@ -26,7 +26,10 @@
           </a>
         </td>
         <td>
-          <a href="{{ repo.url }}" target=”_blank” rel="nofollow">{{ repo.title }}</a>
+          <a href="https://github.com/mikekeda/{{ repo.name }}" target=”_blank” rel="nofollow">{{ repo.title }}</a>
+        </td>
+        <td>
+          {{ repo.elapsed }}
         </td>
         <td>
           <a href="https://app.codacy.com/gh/mikekeda/{{ repo.name }}/dashboard" target=”_blank” rel="nofollow">
