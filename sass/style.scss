@@ -8,6 +8,10 @@
   margin-top: 3.6rem !important;
 }
 
+.h2 {
+  font-size: 3.56rem;
+}
+
 .no-br-radius {
   border-radius: 0 !important;
 }
@@ -31,6 +35,10 @@
   &.red {
     background-color: red;
   }
+}
+
+.nav-wrapper h1 {
+  margin: 0;
 }
 
 body > .container {

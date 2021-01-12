@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Logs{% endblock %}
+{% block page_title %}Logs{% endblock %}
 {% block body %}
     <nav>
         <div class="nav-wrapper">
@@ -12,7 +13,6 @@
     </nav>
 
     <div class="container my-6 has-breadcrumb">
-        <h1 class="no-margin text-uppercase h4"><wbr>Logs</h1>
         <textarea id="logs" disabled>{{ logs }}</textarea>
     </div>
     <script type="text/javascript">
