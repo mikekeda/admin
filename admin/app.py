@@ -9,14 +9,13 @@ from sanic_session import Session, AIORedisSessionInterface
 from sanic_jinja2 import SanicJinja2
 from sqlalchemy.engine.url import URL
 
-import settings
-from settings import get_env_var
+from admin.settings import get_env_var, SECRET_KEY, REDIS_CACHE_CONFIG
 from admin.template_tags import get_item
 
 app = Sanic(__name__)
 app.config['DEBUG'] = bool(get_env_var('DEBUG', 'True'))
 app.config['SOCKET_FILE'] = get_env_var('SOCKET_FILE', '/temp/admin.sock')
-app.config['SECRET_KEY'] = settings.SECRET_KEY
+app.config['SECRET_KEY'] = SECRET_KEY
 app.config['DB_USE_CONNECTION_FOR_REQUEST'] = False
 app.config['DB_USER'] = get_env_var('DB_USER', 'admin_admin')
 app.config['DB_PASSWORD'] = get_env_var('DB_PASSWORD', 'admin_admin_pasWQ27$')
@@ -66,7 +65,7 @@ async def init_cache(_app, loop):
     # Pass the getter method for the connection pool into the session.
     session.init_app(_app, interface=AIORedisSessionInterface(_app.redis))
 
-    caches.set_config(settings.REDIS_CACHE_CONFIG)
+    caches.set_config(REDIS_CACHE_CONFIG)
 
 
 @app.listener('after_server_stop')
