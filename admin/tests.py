@@ -5,8 +5,8 @@ import pytest
 if os.environ.get('ADMIN_DB_NAME') is None:
     os.environ['ADMIN_DB_NAME'] = 'test_admin'
 
-from models import User, db
-from views import app
+from admin.models import User, db
+from admin.views import app
 from settings import get_env_var
 
 test_username = 'test_user_1'

@@ -11,7 +11,7 @@ from sqlalchemy.engine.url import URL
 
 import settings
 from settings import get_env_var
-from template_tags import get_item
+from admin.template_tags import get_item
 
 app = Sanic(__name__)
 app.config['DEBUG'] = bool(get_env_var('DEBUG', 'True'))
