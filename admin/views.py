@@ -16,7 +16,7 @@ from sanic.views import HTTPMethodView
 from sanic_session.base import SessionDict
 
 import settings
-from app import app, jinja, session
+from admin.app import app, jinja, session
 from admin.forms import LoginForm
 from admin.models import APIKey, authenticate, Repo
 
