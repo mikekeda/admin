@@ -7,7 +7,7 @@ from bcrypt import hashpw
 from sqlalchemy.sql import and_, or_
 
 import settings
-from app import db
+from admin.app import db
 
 
 def hash_password(value: str) -> str:
