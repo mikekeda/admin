@@ -17,8 +17,8 @@ from sanic_session.base import SessionDict
 
 import settings
 from app import app, jinja, session
-from forms import LoginForm
-from models import APIKey, authenticate
+from admin.forms import LoginForm
+from admin.models import APIKey, authenticate, Repo
 
 
 async def login(request, user) -> None:
@@ -52,40 +52,43 @@ async def homepage(request):
         return redirect('/login')
 
     async with ClientSession() as _session:
+        repos = await Repo.query.gino.all()
         tasks = [
-            get_site_status(site['url'], _session)
-            for site in settings.SITES.values()
+            get_site_status(repo.url, _session)
+            for repo in repos
         ]
 
         statuses = {key: val for key, val in await asyncio.gather(*tasks)}
 
-        for site in settings.SITES.values():
-            site['status'] = statuses.get(site['url']) == 200
+        for repo in repos:
+            repo.status = statuses.get(repo.url) == 200
 
-    return html(jinja.render_string('sites.html', request,
-                                    sites=settings.SITES.values()))
+    return html(jinja.render_string('sites.html', request, repos=repos))
 
 
-@app.route("/sites/<site_name>/logs")
-async def logs_page(request, site_name):
+@app.route("/sites/<repo_name>/logs")
+async def logs_page(request, repo_name):
     """View site logs."""
     if not request.ctx.session.get('user'):
         return redirect('/login')
 
-    site = settings.SITES.get(site_name)
-    if not site or not os.path.exists(site['logs']):
+    repo = await Repo.query.gino.first(name=repo_name)
+    logs = f"{settings.get_env_var('LOG_FOLDER')}/{repo.name}/error.log"
+    if not repo or not os.path.exists(logs):
         abort(404)
 
-    async with aiofiles.open(site['logs'], 'r') as f:
+    async with aiofiles.open(logs, 'r') as f:
         logs = (await f.readlines())[-10000:]  # last 10000 lines
 
     return html(jinja.render_string('logs.html', request, logs=''.join(logs),
-                                    site_name=site_name))
+                                    site_name=repo_name))
 
 
 @app.route("/about")
 async def about_page(request):
     """About page."""
+    # from admin.models import db
+    # await db.gino.create_all()
     return html(jinja.render_string('about.html', request))
 
 

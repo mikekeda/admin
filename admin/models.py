@@ -45,6 +45,17 @@ class User(db.Model):
         super().__init__(*args, **kwargs)
 
 
+class Repo(db.Model):
+    """Repo model."""
+    __tablename__ = 'repos'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(32), nullable=False, unique=True)
+    name = db.Column(db.String(32), nullable=False, unique=True)
+    url = db.Column(db.String(64))
+    codacy = db.Column(db.String(128))
+
+
 class APIKey(db.Model):
     """API keys model."""
     __tablename__ = "api_keys"
