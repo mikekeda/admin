@@ -76,9 +76,8 @@ async def logs_page(request, repo_name: str, file_name: str):
     if file_name not in {'error.log', 'out.log'}:
         abort(403)
 
-    repo = await Repo.query.gino.first(name=repo_name)
-    logs = f"{get_env_var('LOG_FOLDER')}/{repo.name}/{file_name}"
-    if not repo or not os.path.exists(logs):
+    logs = f"{get_env_var('LOG_FOLDER')}/{repo_name}/{file_name}"
+    if not os.path.exists(logs):
         abort(404)
 
     async with aiofiles.open(logs, 'r') as f:
