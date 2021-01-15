@@ -76,7 +76,8 @@ async def logs_page(request, repo_name: str, file_name: str):
     if file_name not in {'error.log', 'out.log'}:
         abort(403)
 
-    logs = f"{get_env_var('LOG_FOLDER')}/{repo_name}/{file_name}"
+    folder = repo_name.lower().replace('-', '_')
+    logs = f"{get_env_var('LOG_FOLDER')}/{folder}/{file_name}"
     if not os.path.exists(logs):
         abort(404)
 
