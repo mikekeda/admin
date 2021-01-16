@@ -76,9 +76,6 @@ async def logs_page(request, repo_name: str, file_name: str):
     if not request.ctx.session.get('user'):
         return redirect('/login')
 
-    if file_name not in {'error.log', 'out.log'}:
-        abort(403)
-
     folder = repo_name.lower().replace('-', '_')
     logs = f"{get_env_var('LOG_FOLDER')}/{folder}/{file_name}"
     if not os.path.exists(logs):

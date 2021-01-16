@@ -55,7 +55,7 @@ class Repo(db.Model):
     name = db.Column(db.String(64), nullable=False, unique=True)
     url = db.Column(db.String(64))
     codacy = db.Column(db.String(128))
-    logs = db.Column(ARRAY(db.String(32)))
+    logs = db.Column(ARRAY(db.String(32)), server_default="{}")
 
 
 class APIKey(db.Model):
