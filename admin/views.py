@@ -89,7 +89,7 @@ async def logs_page(request, repo_name: str, file_name: str):
         logs = (await f.readlines())[-10000:]  # last 10000 lines
 
     return html(jinja.render_string('logs.html', request, logs=''.join(logs),
-                                    site_name=repo_name))
+                                    site_name=repo_name, file_name=file_name))
 
 
 @app.route("/about")
