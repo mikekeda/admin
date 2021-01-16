@@ -58,7 +58,7 @@ async def homepage(request):
         return redirect('/login')
 
     async with ClientSession() as _session:
-        repos = await Repo.query.gino.all()
+        repos = await Repo.query.order_by(Repo.id).gino.all()
         statuses = await asyncio.gather(*[
             get_site_status(repo.url, _session)
             for repo in repos
