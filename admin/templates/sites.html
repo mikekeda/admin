@@ -42,8 +42,9 @@
           </a>
         </td>
         <td>
-          <a href="/sites/{{ repo.name }}/error.log">error.log</a>
-          <a href="/sites/{{ repo.name }}/out.log" class="right">out.log</a>
+          {% for log_file in repo.logs %}
+            <a href="/sites/{{ repo.title }}/{{ log_file }}">{{ log_file }}</a>
+          {% endfor %}
         </td>
       </tr>
       {% endfor %}
