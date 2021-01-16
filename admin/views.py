@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import time
 import uuid
 from functools import wraps
@@ -75,6 +76,9 @@ async def logs_page(request, repo_name: str, file_name: str):
     """View site logs."""
     if not request.ctx.session.get('user'):
         return redirect('/login')
+
+    if not file_name.endswith('.log') or not re.match("^[a-zA-Z-]*$", file_name):
+        abort(403)
 
     folder = repo_name.lower().replace('-', '_')
     logs = f"{get_env_var('LOG_FOLDER')}/{folder}/{file_name}"
