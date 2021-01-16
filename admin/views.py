@@ -77,7 +77,7 @@ async def logs_page(request, repo_name: str, file_name: str):
     if not request.ctx.session.get('user'):
         return redirect('/login')
 
-    if not file_name.endswith('.log') or not re.match("^[a-zA-Z-]*$", file_name):
+    if not file_name.endswith('.log') or not re.match("^[a-zA-Z-]*$", repo_name):
         abort(403)
 
     folder = repo_name.lower().replace('-', '_')
