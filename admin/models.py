@@ -4,6 +4,7 @@ import string
 from typing import Optional, Tuple
 
 from bcrypt import hashpw
+from sqlalchemy import ARRAY
 from sqlalchemy.sql import and_, or_
 
 from admin.app import db
@@ -50,10 +51,11 @@ class Repo(db.Model):
     __tablename__ = 'repos'
 
     id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(32), nullable=False, unique=True)
-    name = db.Column(db.String(32), nullable=False, unique=True)
+    title = db.Column(db.String(64), nullable=False, unique=True)
+    name = db.Column(db.String(64), nullable=False, unique=True)
     url = db.Column(db.String(64))
     codacy = db.Column(db.String(128))
+    logs = db.Column(ARRAY(db.String(32)))
 
 
 class APIKey(db.Model):

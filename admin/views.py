@@ -58,6 +58,7 @@ async def homepage(request):
         statuses = await asyncio.gather(*[
             get_site_status(repo.url, _session)
             for repo in repos
+            if repo.url
         ])
 
         for i, repo in enumerate(repos):
