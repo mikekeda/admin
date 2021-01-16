@@ -1,13 +1,13 @@
 {% extends 'base.html' %}
-{% block title %}Logs{% endblock %}
-{% block page_title %}Logs{% endblock %}
+{% block title %}{{ file_name }}{% endblock %}
+{% block page_title %}{{ file_name }}{% endblock %}
 {% block body %}
     <nav>
         <div class="nav-wrapper">
             <div class="container">
                 <a href="/" class="breadcrumb">Sites</a>
                 <a href="/sites/{{ site_name }}" class="breadcrumb">{{ site_name }}</a>
-                <a href="/sites/{{ site_name }}/logs" class="breadcrumb">Logs</a>
+                <a href="/sites/{{ site_name }}/{{ file_name }}" class="breadcrumb">{{ file_name }}</a>
             </div>
         </div>
     </nav>
@@ -16,7 +16,7 @@
         <textarea id="logs" disabled>{{ logs }}</textarea>
     </div>
     <script type="text/javascript">
-        var textarea = document.getElementById('logs');
+        let textarea = document.getElementById('logs');
         textarea.scrollTop = textarea.scrollHeight;
     </script>
 {% endblock %}
