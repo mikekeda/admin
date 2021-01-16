@@ -3,7 +3,7 @@ import os
 import time
 import uuid
 from functools import wraps
-from typing import Tuple
+from typing import Tuple, Optional
 
 import aiofiles
 from aiohttp import ClientConnectorError, ClientSession
@@ -36,8 +36,11 @@ def logout(request) -> None:
     request.ctx.session.modified = True  # mark as modified to update sid in cookies
 
 
-async def get_site_status(url: str, _session: ClientSession) -> Tuple[int, int]:
+async def get_site_status(url: str, _session: ClientSession) -> Tuple[Optional[int], Optional[int]]:
     """Get site status."""
+    if not url:
+        return None, None
+
     start = time.monotonic()
     try:
         async with _session.get(url) as resp:
@@ -58,7 +61,6 @@ async def homepage(request):
         statuses = await asyncio.gather(*[
             get_site_status(repo.url, _session)
             for repo in repos
-            if repo.url
         ])
 
         for i, repo in enumerate(repos):
