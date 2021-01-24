@@ -52,21 +52,62 @@ async def get_site_status(url: str, _session: ClientSession) -> Tuple[Optional[i
     return status, round((time.monotonic() - start) * 1000)
 
 
+async def check_supervisor_status(process: str) -> str:
+    """Check supervisor status of given process."""
+    proc = await asyncio.create_subprocess_shell(
+        get_env_var('SUPERVISOR_CMD').format(process=process),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE
+    )
+    stdout, stderr = await proc.communicate()
+
+    return stdout.decode() if stdout else stderr.decode()
+
+
 @app.route("/")
 async def homepage(request):
     if not request.ctx.session.get('user'):
         return redirect('/login')
 
-    async with ClientSession() as _session:
-        repos = await Repo.query.order_by(Repo.id).gino.all()
-        statuses = await asyncio.gather(*[
-            get_site_status(repo.url, _session)
-            for repo in repos
+    repos = await Repo.query.order_by(Repo.id).gino.all()
+
+    # Collect processes names.
+    processes = []
+    for repo in repos:
+        processes.extend([
+            f"{repo.process_name}{['', '_celery', '_celerybeat'][i]}"
+            for i, _ in enumerate(repo.processes)
         ])
 
-        for i, repo in enumerate(repos):
-            repo.status = statuses[i][0] == 200
-            repo.elapsed = statuses[i][1]
+    # Check site and supervisor statuses.
+    async with ClientSession() as _session:
+        site_statuses, supervisor_statuses = await asyncio.gather(
+            asyncio.gather(*[  # check site statuses
+                get_site_status(repo.url, _session)
+                for repo in repos
+            ]),
+            asyncio.gather(*[  # check supervisor statuses
+                check_supervisor_status(process)
+                for process in processes
+            ])
+        )
+
+    process_statuses = dict(zip(processes, supervisor_statuses))
+
+    for (status, elapsed), repo in zip(site_statuses, repos):
+        repo.status = status == 200
+        repo.elapsed = elapsed
+        repo.logs = []
+        if len(repo.processes) >= 1:
+            processes.append(repo.process_name)
+            repo.logs.append(("error.log", process_statuses[repo.process_name]))
+            repo.logs.append(("out.log", process_statuses[repo.process_name]))
+        if len(repo.processes) >= 2:
+            processes.append(f"{repo.process_name}_celery")
+            repo.logs.append(("worker.log", process_statuses[f"{repo.process_name}_celery"]))
+        if len(repo.processes) >= 3:
+            processes.append(f"{repo.process_name}_celerybeat")
+            repo.logs.append(("beat.log", process_statuses[f"{repo.process_name}_celerybeat"]))
 
     return html(jinja.render_string('sites.html', request, repos=repos))
 

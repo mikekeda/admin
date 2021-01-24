@@ -42,8 +42,10 @@
           </a>
         </td>
         <td>
-          {% for log_file in repo.logs %}
-            <a href="/sites/{{ repo.title }}/{{ log_file }}">{{ log_file }}</a>
+          {% for log_file, status in repo.logs %}
+            <a href="/sites/{{ repo.title }}/{{ log_file }}" class="{% if status == 'RUNNING' %}green{% else %}red{% endif %}-text" title="{{ status }}">
+              {{ log_file }}
+            </a>
           {% endfor %}
         </td>
       </tr>

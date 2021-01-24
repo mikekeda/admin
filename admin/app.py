@@ -53,8 +53,8 @@ async def init_cache(_app, loop):
     await db.set_bind(
         dsn,
         echo=_app.config.setdefault("DB_ECHO", False),
-        min_size=_app.config.setdefault("DB_POOL_MIN_SIZE", 5),
-        max_size=_app.config.setdefault("DB_POOL_MAX_SIZE", 10),
+        min_size=_app.config.setdefault("DB_POOL_MIN_SIZE", 1),
+        max_size=_app.config.setdefault("DB_POOL_MAX_SIZE", 5),
         ssl=_app.config.setdefault("DB_SSL"),
         loop=loop,
         **_app.config.setdefault("DB_KWARGS", dict()),
@@ -63,7 +63,7 @@ async def init_cache(_app, loop):
     _app.redis = await aioredis.create_redis_pool(_app.config['redis'])
 
     # Pass the getter method for the connection pool into the session.
-    session.init_app(_app, interface=AIORedisSessionInterface(_app.redis))
+    session.init_app(_app, interface=AIORedisSessionInterface(_app.redis, samesite='Lax'))
 
     caches.set_config(REDIS_CACHE_CONFIG)
 
