@@ -4,7 +4,9 @@ import re
 import time
 import uuid
 from functools import wraps
-from typing import Tuple, Optional
+from sanic.log import logger
+from shlex import quote
+from typing import Optional, Tuple
 
 import aiofiles
 from aiohttp import ClientConnectorError, ClientSession
@@ -55,13 +57,15 @@ async def get_site_status(url: str, _session: ClientSession) -> Tuple[Optional[i
 async def check_supervisor_status(process: str) -> str:
     """Check supervisor status of given process."""
     proc = await asyncio.create_subprocess_shell(
-        get_env_var('SUPERVISOR_CMD').format(process=process),
+        get_env_var('SUPERVISOR_CMD').format(process=quote(process)),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE
     )
     stdout, stderr = await proc.communicate()
+    if stderr:
+        logger.warning("Error getting supervisor status: " + stderr.decode())
 
-    return stdout.decode() if stdout else stderr.decode()
+    return stdout.decode().strip()
 
 
 @app.route("/")
