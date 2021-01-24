@@ -58,8 +58,8 @@ class Repo(db.Model):
     processes = db.Column(ARRAY(db.Boolean()), server_default="{}")
 
     @property
-    def process_name(self):
-        return self.name.lower().replace('-', '_')
+    def process_name(self) -> str:
+        return self.title.lower().replace("-", "_").replace(" ", "_")
 
 
 class APIKey(db.Model):
