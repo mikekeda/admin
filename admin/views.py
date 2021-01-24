@@ -1,12 +1,11 @@
 import asyncio
 import os
 import re
-import time
 import uuid
 from functools import wraps
 from sanic.log import logger
 from shlex import quote
-from typing import Optional, Tuple
+from typing import Optional
 
 import aiofiles
 from aiohttp import ClientConnectorError, ClientSession
@@ -39,19 +38,18 @@ def logout(request) -> None:
     request.ctx.session.modified = True  # mark as modified to update sid in cookies
 
 
-async def get_site_status(url: str, _session: ClientSession) -> Tuple[Optional[int], Optional[int]]:
+async def get_site_status(url: str, _session: ClientSession) -> Optional[int]:
     """Get site status."""
     if not url:
-        return None, None
+        return None
 
-    start = time.monotonic()
     try:
         async with _session.get(url) as resp:
             status = resp.status
     except ClientConnectorError:
         status = 404
 
-    return status, round((time.monotonic() - start) * 1000)
+    return status
 
 
 async def check_supervisor_status(process: str) -> str:
@@ -98,9 +96,8 @@ async def homepage(request):
 
     process_statuses = dict(zip(processes, supervisor_statuses))
 
-    for (status, elapsed), repo in zip(site_statuses, repos):
+    for status, repo in zip(site_statuses, repos):
         repo.status = status == 200
-        repo.elapsed = elapsed
         repo.logs = []
         if len(repo.processes) >= 1:
             processes.append(repo.process_name)
