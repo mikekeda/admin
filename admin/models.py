@@ -55,7 +55,11 @@ class Repo(db.Model):
     name = db.Column(db.String(64), nullable=False, unique=True)
     url = db.Column(db.String(64))
     codacy = db.Column(db.String(128))
-    logs = db.Column(ARRAY(db.String(32)), server_default="{}")
+    processes = db.Column(ARRAY(db.Boolean()), server_default="{}")
+
+    @property
+    def process_name(self):
+        return self.name.lower().replace('-', '_')
 
 
 class APIKey(db.Model):
