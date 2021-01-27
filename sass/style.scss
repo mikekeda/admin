@@ -16,9 +16,15 @@
   border-radius: 0 !important;
 }
 
-.table-list td,
-.table-list th {
-  padding: 15px;
+.table-list {
+  th {
+    cursor: pointer;
+  }
+
+  td,
+  th {
+    padding: 15px;
+  }
 }
 
 .status-dot {
