@@ -19,7 +19,7 @@
     <tbody>
       {% for repo in repos %}
       <tr>
-        <td>
+        <td data-order="{% if repo.status %}0{% else %}1{% endif %}">
           <a href="{{ repo.url }}" target=”_blank” rel="nofollow">
             <div class="status-dot {% if repo.status %}green{% else %}red{% endif %}"></div>
           </a>
@@ -51,7 +51,7 @@
 </div>
 <script>
   document.addEventListener("DOMContentLoaded", function(event) {
-    const getCellValue = (tr, idx) => tr.children[idx].innerText || tr.children[idx].textContent;
+    const getCellValue = (tr, idx) => tr.children[idx].dataset.order || tr.children[idx].innerText || tr.children[idx].textContent;
 
     const comparer = (idx, asc) => (a, b) => ((v1, v2) =>
         v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
@@ -59,8 +59,8 @@
 
     // do the work...
     document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
-        const table = th.closest('table');
-        Array.from(table.querySelectorAll('tr:nth-child(n+2)'))
+        const table = th.closest('table').querySelector('tbody');
+        Array.from(table.querySelectorAll('tr:nth-child(n+1)'))
             .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
             .forEach(tr => table.appendChild(tr) );
     })));
