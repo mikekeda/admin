@@ -55,6 +55,7 @@ class Repo(db.Model):
     name = db.Column(db.String(64), nullable=False, unique=True)
     url = db.Column(db.String(64))
     codacy = db.Column(db.String(128))
+    coverage = db.Column(db.String(128))
     processes = db.Column(ARRAY(db.Boolean()), server_default="{}")
 
     @property
