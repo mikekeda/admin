@@ -63,6 +63,18 @@ class Repo(db.Model):
         return self.title.lower().replace("-", "_").replace(" ", "_")
 
 
+class Metric(db.Model):
+    """Metric model."""
+    __tablename__ = 'metrics'
+
+    id = db.Column(db.Integer, primary_key=True)
+    site = db.Column(db.Integer, db.ForeignKey("repos.id"))
+    response_time = db.Column(db.Interval, nullable=False)
+    response_size = db.Column(db.Float, nullable=False)
+    status_code = db.Column(db.Integer, nullable=False)
+    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+
+
 class APIKey(db.Model):
     """API keys model."""
     __tablename__ = "api_keys"
