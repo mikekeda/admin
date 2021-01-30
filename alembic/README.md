@@ -1,6 +1,6 @@
 Generic single-database configuration.
 
-export PYTHONPATH=$PYTHONPATH:/full_path/to/alembic_sample
+export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 Generate migration:
 `alembic revision --autogenerate -m "Add a column"`

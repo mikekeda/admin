@@ -5,23 +5,15 @@ from aiocache import caches
 from gino import Gino
 from sanic import Sanic
 from sanic.log import logger
-from sanic_session import Session, AIORedisSessionInterface
 from sanic_jinja2 import SanicJinja2
+from sanic_session import AIORedisSessionInterface, Session
 from sqlalchemy.engine.url import URL
 
-from admin.settings import get_env_var, SECRET_KEY, REDIS_CACHE_CONFIG
+from admin.settings import REDIS_CACHE_CONFIG, SANIC_CONFIG
 from admin.template_tags import get_item
 
 app = Sanic(__name__)
-app.config['DEBUG'] = bool(get_env_var('DEBUG', 'True'))
-app.config['SOCKET_FILE'] = get_env_var('SOCKET_FILE', '/temp/admin.sock')
-app.config['SECRET_KEY'] = SECRET_KEY
-app.config['DB_USE_CONNECTION_FOR_REQUEST'] = False
-app.config['DB_USER'] = get_env_var('DB_USER', 'admin_admin')
-app.config['DB_PASSWORD'] = get_env_var('DB_PASSWORD', 'admin_admin_pasWQ27$')
-app.config['DB_HOST'] = get_env_var('DB_HOST', '127.0.0.1')
-app.config['DB_DATABASE'] = get_env_var('DB_NAME', 'admin')
-app.config['redis'] = 'redis://127.0.0.1/8'
+app.config.update(SANIC_CONFIG)
 app.static('/static', './static')
 
 db = Gino()
