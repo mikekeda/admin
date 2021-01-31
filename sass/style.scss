@@ -16,6 +16,11 @@
   border-radius: 0 !important;
 }
 
+path:hover,
+path:focus {
+  stroke-width: 5px;
+}
+
 .table-list {
   th {
     cursor: pointer;

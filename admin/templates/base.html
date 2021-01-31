@@ -23,6 +23,9 @@
             <a href="/about" class="{% if request.path == '/about' %}active{% else %}grey-text{% endif %}">About</a>
           </li>
           {% if request.ctx.user %}
+          <li class="{% if request.path == '/metrics' %}active{% endif %}">
+            <a href="/metrics" class="{% if request.path == '/metrics' %}active{% else %}grey-text{% endif %}">Metrics</a>
+          </li>
           <li class="{% if request.path == '/user' %}active{% endif %}">
             <a href="/user" class="{% if request.path == '/user' %}active{% else %}grey-text{% endif %}">{{ get_item(request.ctx.user, 'username') }}</a>
           </li>

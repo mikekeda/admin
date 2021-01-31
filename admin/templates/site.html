@@ -44,7 +44,6 @@
     google.charts.setOnLoadCallback(drawCharts);
 
     const _metrics = {{ metrics|safe }};
-    let stats_per_country;
 
     function drawCharts() {
         drawChart('Ping', 'ping (ms)', 1, 'ping_div', 1008, 500);
@@ -54,8 +53,6 @@
 
     function drawChart(title, label, i, div_id, width, height) {
         var data = new google.visualization.DataTable();
-
-        stats_per_country = [];
 
         data.addColumn('datetime', 'Time of Day');
         data.addColumn('number', label);
