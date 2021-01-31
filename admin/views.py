@@ -1,4 +1,6 @@
 import asyncio
+from collections import defaultdict
+from datetime import datetime, timedelta
 import os
 import re
 import uuid
@@ -15,6 +17,7 @@ from sanic.response import json as sanic_json
 from sanic.response import redirect
 from sanic.views import HTTPMethodView
 from sanic_session.base import SessionDict
+from sqlalchemy import and_
 
 from admin.app import app, jinja, session
 from admin.forms import LoginForm
@@ -141,6 +144,34 @@ async def homepage(request):
             repo.logs.append(("beat.log", process_statuses[f"{repo.process_name}_celerybeat"]))
 
     return html(jinja.render_string('sites.html', request, repos=repos))
+
+
+@app.route("/metrics")
+@login_required()
+async def metric(request):
+    sites = await Repo.query.order_by(Repo.id).where(Repo.url.isnot(None)).gino.all()
+    site_ids = [s.id for s in sites]
+
+    metrics_dict = defaultdict(lambda: defaultdict(int))
+    metrics = await Metric.query.where(
+        and_(
+            Metric.timestamp > datetime.now() - timedelta(days=1),
+            Metric.site.in_(site_ids),
+        )
+    ).gino.all()
+    for m in metrics:
+        metrics_dict[m.timestamp.isoformat(timespec="minutes")][m.site] = (
+            m.response_time.microseconds / 1000
+        )
+
+    metrics = [
+        [timestamp] + [metrics_dict[timestamp][site_id] for site_id in site_ids]
+        for timestamp in metrics_dict
+    ]
+
+    return html(
+        jinja.render_string("metric.html", request, sites=sites, metrics=metrics)
+    )
 
 
 @app.route("/sites/<repo_name>")
