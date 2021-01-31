@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ site.title }}{% endblock %}
+{% block page_title %}<span class="{% if site.status %}green{% else %}red{% endif %}-text">{{ site.title }}</span>{% endblock %}
+
+{% block body %}
+<nav>
+    <div class="nav-wrapper">
+        <div class="container">
+            <a href="/" class="breadcrumb">Sites</a>
+            <a href="/sites/{{ site_name }}" class="breadcrumb">{{ site.title }}</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container my-5">
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
+
+    <p>
+        <img src="https://requires.io/github/mikekeda/{{ site.name }}/requirements.svg?branch=master" alt="Requirements Status" style="max-width:100%;">
+        <img src="{{ site.codacy }}" alt="Codacy Badge" style="max-width:100%;">
+        {% if site.coverage %}
+        <img src="{{ site.coverage }}" alt="Coverage Badge" style="max-width:100%;">
+        {% endif %}
+
+        {% for status in supervisor_statuses %}
+        <span class="status-dot {% if status %}green{% else %}red{% endif %}"></span>
+        {% endfor %}
+
+        <a href="https://github.com/mikekeda/{{ site.name }}" class="right" target=”_blank” rel="nofollow">
+            github
+        </a>
+    </p>
+
+    <div id="ping_div"></div>
+    <div class="row">
+        <div id="status_div" class="left"></div>
+        <div id="size_div" class="right"></div>
+    </div>
+
+</div>
+<script>
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(drawCharts);
+
+    const _metrics = {{ metrics|safe }};
+    let stats_per_country;
+
+    function drawCharts() {
+        drawChart('Ping', 'ping (ms)', 1, 'ping_div', 1008, 500);
+        drawChart('Response status', '', 2, 'status_div', 504, 100);
+        drawChart('Response size', 'size (kB)', 3, 'size_div', 504, 100);
+    }
+
+    function drawChart(title, label, i, div_id, width, height) {
+        var data = new google.visualization.DataTable();
+
+        stats_per_country = [];
+
+        data.addColumn('datetime', 'Time of Day');
+        data.addColumn('number', label);
+        for (let idx in _metrics) {
+            data.addRow([new Date(_metrics[idx][0]), _metrics[idx][i]]);
+        }
+
+        const options = {
+            title: title,
+            width: width,
+            height: height,
+            hAxis: {
+                format: 'dd hh:mm',
+                gridlines: {
+                    count: -1,
+                    units: {
+                        days: {format: ['MMM dd']},
+                        hours: {format: ['HH:mm', 'ha']},
+                    }
+                }
+            },
+            vAxis: {
+                gridlines: {color: 'none'}
+            }
+        };
+
+        let chart = new google.visualization.LineChart(document.getElementById(div_id));
+
+        chart.draw(data, options);
+    }
+</script>
+{% endblock %}

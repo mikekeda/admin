@@ -3,13 +3,13 @@ import os
 import re
 import uuid
 from functools import wraps
-from sanic.log import logger
 from shlex import quote
 from typing import Optional
 
 import aiofiles
 from aiohttp import ClientConnectorError, ClientSession
 from sanic.exceptions import abort
+from sanic.log import logger
 from sanic.response import html
 from sanic.response import json as sanic_json
 from sanic.response import redirect
@@ -18,8 +18,40 @@ from sanic_session.base import SessionDict
 
 from admin.app import app, jinja, session
 from admin.forms import LoginForm
-from admin.models import APIKey, Repo, authenticate
+from admin.models import APIKey, Metric, Repo, authenticate
 from admin.settings import API_KEY_HEADER, LOGIN_REDIRECT_URL, get_env_var
+
+
+def login_required():
+    """Authentication decorator."""
+    def decorator(f):
+        @wraps(f)
+        async def decorated_function(request, *args, **kwargs):
+            if request.ctx.session.get('user'):
+                return await f(request, *args, **kwargs)
+
+            # User is not authorized.
+            return redirect('/login')
+        return decorated_function
+    return decorator
+
+
+def api_authentication():
+    """Api authentication decorator."""
+    def decorator(f):
+        @wraps(f)
+        async def decorated_function(request, *args, **kwargs):
+            token = request.headers.get(API_KEY_HEADER)
+            user = await APIKey.authenticate(token)
+
+            if user:
+                await login(request, user)
+                return await f(request, *args, **kwargs)
+
+            # User is not authorized.
+            return sanic_json({'status': 'not_authorized'}, 403)
+        return decorated_function
+    return decorator
 
 
 async def login(request, user) -> None:
@@ -67,10 +99,8 @@ async def check_supervisor_status(process: str) -> str:
 
 
 @app.route("/")
+@login_required()
 async def homepage(request):
-    if not request.ctx.session.get('user'):
-        return redirect('/login')
-
     repos = await Repo.query.order_by(Repo.id).gino.all()
 
     # Collect processes names.
@@ -113,11 +143,53 @@ async def homepage(request):
     return html(jinja.render_string('sites.html', request, repos=repos))
 
 
+@app.route("/sites/<repo_name>")
+@login_required()
+async def logs_page(request, repo_name: str):
+    site = await Repo.query.where(Repo.title == repo_name).gino.first()
+
+    processes = [
+        f"{site.process_name}{['', '_celery', '_celerybeat'][i]}"
+        for i, _ in enumerate(site.processes)
+    ]
+
+    async with ClientSession() as _session:
+        metrics, site_status, supervisor_statuses = await asyncio.gather(
+            Metric.query.where(Metric.site == site.id).gino.all(),
+            get_site_status(site.url, _session),
+            asyncio.gather(  # check supervisor statuses
+                *[
+                    check_supervisor_status(process) for process in processes
+                ]
+            ),
+        )
+
+    metrics = [
+        [
+            metric.timestamp.isoformat(),
+            metric.response_time.microseconds / 1000,
+            metric.status_code,
+            metric.response_size,
+        ]
+        for metric in metrics
+    ]
+
+    return html(
+        jinja.render_string(
+            "site.html",
+            request,
+            site=site,
+            metrics=metrics,
+            site_status=site_status,
+            supervisor_statuses=supervisor_statuses,
+        )
+    )
+
+
 @app.route("/sites/<repo_name>/<file_name>")
+@login_required()
 async def logs_page(request, repo_name: str, file_name: str):
     """View site logs."""
-    if not request.ctx.session.get('user'):
-        return redirect('/login')
 
     if not file_name.endswith('.log') or not re.match("^[a-zA-Z-]*$", repo_name):
         abort(403)
@@ -147,24 +219,6 @@ async def logout_page(request):
     """Logout page."""
     logout(request)
     return redirect(LOGIN_REDIRECT_URL)
-
-
-def api_authentication():
-    """Api authentication decorator."""
-    def decorator(f):
-        @wraps(f)
-        async def decorated_function(request, *args, **kwargs):
-            token = request.headers.get(API_KEY_HEADER)
-            user = await APIKey.authenticate(token)
-
-            if user:
-                await login(request, user)
-                return await f(request, *args, **kwargs)
-
-            # User is not authorized.
-            return sanic_json({'status': 'not_authorized'}, 403)
-        return decorated_function
-    return decorator
 
 
 @app.route("/api", methods={"POST"})
