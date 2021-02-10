@@ -17,30 +17,31 @@
     <script src="https://www.gstatic.com/charts/loader.js"></script>
 
     <div id="ping_div"></div>
+    <div id="status_div"></div>
 </div>
 
 <script>
     google.charts.load('current', {'packages':['corechart']});
     google.charts.setOnLoadCallback(drawCharts);
 
-    const _metrics = {{ metrics|safe }};
-    console.log(_metrics);
+    const _pings = {{ pings|safe }};
+    const _statuses = {{ statuses|safe }};
 
     function drawCharts() {
-        drawChart('Ping', 'ping (ms)', 'ping_div', 1008, 500);
+        drawChart('Ping', 'ping (ms)', 'ping_div', _pings, 1008, 500);
+        drawChart('Status', '', 'status_div', _statuses, 1008, 100);
     }
 
-    function drawChart(title, label, div_id, width, height) {
+    function drawChart(title, label, div_id, metric, width, height) {
         var data = new google.visualization.DataTable();
 
         data.addColumn('datetime', 'Time of Day');
         {% for site in sites %}
             data.addColumn('number', '{{ site.title }}');
         {% endfor %}
-        for (let idx in _metrics) {
-            _metrics[idx][0] = new Date(_metrics[idx][0])
-            console.log(_metrics[idx]);
-            data.addRow(_metrics[idx]);
+        for (let idx in metric) {
+            metric[idx][0] = new Date(metric[idx][0])
+            data.addRow(metric[idx]);
         }
 
         const options = {
