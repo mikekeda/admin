@@ -96,5 +96,5 @@ async def exception_handler(request, exception: Exception, **__):
         request,
         status=status_code,
         status_code=status_code,
-        message=''.join(exception.args)
+        message=" ".join(str(arg) for arg in exception.args)
     )
