@@ -131,7 +131,7 @@ async def get_pypi_version(
 
 async def get_requirements_status(
     folder: str, file_name: str, show_only_outdated: bool = False
-) -> list[Optional[str]]:
+) -> list[tuple[str, Optional[str], Optional[str]]]:
     """Parse requirements.txt to get list of packages with current and latest versions."""
     async with aiofiles.open(f"{folder}/{file_name}", "r") as f:
         requirements = await f.readlines()
@@ -376,8 +376,6 @@ async def logs_page(request, repo_name: str, file_name: str):
 @app.route("/about")
 async def about_page(request):
     """About page."""
-    # from admin.models import db
-    # await db.gino.create_all()
     return html(jinja.render_string("about.html", request))
 
 
