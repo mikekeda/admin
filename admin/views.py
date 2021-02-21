@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import os
 import re
@@ -105,6 +107,63 @@ async def check_supervisor_status(process: str) -> str:
         logger.warning("Error getting supervisor status: " + stderr.decode())
 
     return stdout.decode().strip()
+
+
+async def get_pypi_version(
+    line: str, _session: ClientSession
+) -> tuple[str, Optional[str], Optional[str]]:
+    """Get the current and latest version for given package."""
+
+    if "==" not in line:
+        return line, None, None
+
+    package, current_version = line.split("==")
+    url = f"https://pypi.python.org/pypi/{package}/json"
+    try:
+        async with _session.get(url) as resp:
+            new_version = (await resp.json())["info"]["version"]
+    except (ClientConnectorError, KeyError) as e:
+        logger.warning("Error getting pypi info for %s: %s", package, repr(e))
+        return line, current_version, None  # we were now able to get latest version
+
+    return package, current_version, new_version
+
+
+async def get_requirements_status(
+    folder: str, file_name: str, show_only_outdated: bool = False
+) -> list[Optional[str]]:
+    """Parse requirements.txt to get list of packages with current and latest versions."""
+    async with aiofiles.open(f"{folder}/{file_name}", "r") as f:
+        requirements = await f.readlines()
+
+    async with ClientSession() as _session:
+        versions = await asyncio.gather(
+            *[get_pypi_version(line.strip("\n"), _session) for line in requirements]
+        )
+
+    if show_only_outdated:
+        versions = [
+            (package, current_version, new_version)
+            for package, current_version, new_version in versions
+            if new_version is not None and current_version != new_version
+        ]
+
+    return versions
+
+
+async def update_requirements(folder: str):
+    """Update requirements.txt"""
+    for file_name in ("requirements.txt", "requirements-dev.txt"):
+        versions = await get_requirements_status(folder, file_name)
+
+        async with aiofiles.open(f"{folder}/{file_name}", "w") as f:
+            await f.writelines(
+                [
+                    ("==".join([package, new_version]) if new_version else package)
+                    + "\n"
+                    for package, _, new_version in versions
+                ]
+            )
 
 
 @app.route("/")
@@ -224,6 +283,18 @@ async def logs_page(request, repo_name: str):
         for metric in metrics
     ]
 
+    requirements_status, requirements_dev_status = await asyncio.gather(
+        get_requirements_status(f"../{site.process_name}", "requirements.txt", True),
+        get_requirements_status(
+            f"../{site.process_name}", "requirements-dev.txt", True
+        ),
+    )
+    requirements_statuses = {}
+    if requirements_status:
+        requirements_statuses["requirements.txt"] = requirements_status
+    if requirements_status:
+        requirements_statuses["requirements-dev.txt"] = requirements_dev_status
+
     return html(
         jinja.render_string(
             "site.html",
@@ -232,8 +303,47 @@ async def logs_page(request, repo_name: str):
             metrics=metrics,
             site_status=site_status,
             supervisor_statuses=supervisor_statuses,
+            requirements_statuses=requirements_statuses,
         )
     )
+
+
+@app.route("/sites/<repo_name>/update", methods=["POST"])
+@login_required()
+async def update_requirements_txt(_, repo_name: str):
+    """Update requirements.txt"""
+    folder_name = "../" + (
+        repo_name.lower()
+        .replace("-", "_")
+        .replace(" ", "_")
+        .replace("/", "")
+        .replace(".", "")
+    )
+    await update_requirements(folder_name)
+
+    git_commands = [
+        f"cd {folder_name}",
+        "git add requirements.txt",
+        "git add requirements-dev.txt",
+        'git commit -m "Updated requirements.txt (automatically)"',
+        "git push origin master",
+        "git push github master",
+    ]
+
+    proc = await asyncio.create_subprocess_shell(
+        " && ".join(git_commands),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await proc.communicate()
+    if stdout:
+        logger.info("Committing changes for %s: %s", repo_name, stdout.decode())
+    elif stderr:
+        logger.warning(
+            "Error committing changes for %s: %s", repo_name, stderr.decode()
+        )
+
+    return redirect(f"/sites/{repo_name}")
 
 
 @app.route("/sites/<repo_name>/<file_name>")

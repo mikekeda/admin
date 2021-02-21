@@ -32,8 +32,45 @@
         </a>
     </p>
 
-    <div id="ping_div"></div>
     <div class="row">
+        {% if requirements_statuses %}
+        <form action="/sites/{{ site.title }}/update" method="POST">
+            <button class="btn waves-effect waves-light" type="submit" name="action">Update requirements
+                <i class="material-icons right">send</i>
+            </button>
+        </form>
+        {% endif %}
+
+        {% for file, requirements_status in requirements_statuses.items() %}
+        {% if requirements_status %}
+        <h4>Outdated requirements in {{ file }}:</h4>
+        <table class="table-list white bordered">
+            <thead class="grey darken-2">
+                <tr>
+                    <th class="no-br-radius white-text">Package</th>
+                    <th class="no-br-radius white-text">Current</th>
+                    <th class="no-br-radius white-text">Latest</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            {% for package, current, latest in requirements_status %}
+            <tr>
+                <td>
+                    <a href="https://pypi.org/project/{{ package }}/" target=”_blank” rel="nofollow">
+                        {{ package }}
+                    </a>
+                </td>
+                <td>{{ current }}</td>
+                <td>{{ latest }}</td>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% endfor %}
+
+        <h4>Metrics:</h4>
+        <div id="ping_div"></div>
         <div id="status_div" class="left"></div>
         <div id="size_div" class="right"></div>
     </div>
