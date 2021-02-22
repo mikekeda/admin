@@ -323,11 +323,11 @@ async def update_requirements_txt(_, repo_name: str):
 
     git_commands = [
         f"cd {folder_name}",
-        "git add requirements.txt",
-        "git add requirements-dev.txt",
-        'git commit -m "Updated requirements.txt (automatically)"',
-        "git push origin master",
-        "git push github master",
+        "/usr/bin/git add requirements.txt",
+        "/usr/bin/git add requirements-dev.txt",
+        '/usr/bin/git commit -m "Updated requirements.txt (automatically)"',
+        "/usr/bin/git push origin master",
+        "/usr/bin/git push github master",
     ]
 
     proc = await asyncio.create_subprocess_shell(
@@ -338,7 +338,7 @@ async def update_requirements_txt(_, repo_name: str):
     stdout, stderr = await proc.communicate()
     if stdout:
         logger.info("Committing changes for %s: %s", repo_name, stdout.decode())
-    elif stderr:
+    if stderr:
         logger.warning(
             "Error committing changes for %s: %s", repo_name, stderr.decode()
         )
