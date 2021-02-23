@@ -259,6 +259,8 @@ async def metric(request):
 @login_required()
 async def logs_page(request, repo_name: str):
     site = await Repo.query.where(Repo.title == repo_name).gino.first()
+    if not site:
+        abort(404)
 
     processes = [
         f"{site.process_name}{['', '_celery', '_celerybeat'][i]}"
@@ -322,6 +324,7 @@ async def update_requirements_txt(_, repo_name: str):
     await update_requirements(folder_name)
 
     repo = git.Repo(folder_name)
+    repo.index.add(["requirements.txt", "requirements-dev.txt"])
     repo.index.commit("Updated requirements.txt (automatically)")
     repo.remotes.origin.push("master")
     repo.remotes.github.push("master")
