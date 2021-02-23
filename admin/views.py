@@ -11,6 +11,7 @@ from shlex import quote
 from typing import Optional
 
 import aiofiles
+import git
 from aiohttp import ClientConnectorError, ClientSession
 from sanic.exceptions import abort
 from sanic.log import logger
@@ -283,16 +284,15 @@ async def logs_page(request, repo_name: str):
         for metric in metrics
     ]
 
+    folder = get_env_var("REPO_PREFIX") + site.process_name
     requirements_status, requirements_dev_status = await asyncio.gather(
-        get_requirements_status(f"../{site.process_name}", "requirements.txt", True),
-        get_requirements_status(
-            f"../{site.process_name}", "requirements-dev.txt", True
-        ),
+        get_requirements_status(folder, "requirements.txt", True),
+        get_requirements_status(folder, "requirements-dev.txt", True),
     )
     requirements_statuses = {}
     if requirements_status:
         requirements_statuses["requirements.txt"] = requirements_status
-    if requirements_status:
+    if requirements_dev_status:
         requirements_statuses["requirements-dev.txt"] = requirements_dev_status
 
     return html(
@@ -312,7 +312,7 @@ async def logs_page(request, repo_name: str):
 @login_required()
 async def update_requirements_txt(_, repo_name: str):
     """Update requirements.txt"""
-    folder_name = "../" + (
+    folder_name = get_env_var("REPO_PREFIX") + (
         repo_name.lower()
         .replace("-", "_")
         .replace(" ", "_")
@@ -321,27 +321,10 @@ async def update_requirements_txt(_, repo_name: str):
     )
     await update_requirements(folder_name)
 
-    git_commands = [
-        f"cd {folder_name}",
-        "/usr/bin/git add requirements.txt",
-        "/usr/bin/git add requirements-dev.txt",
-        '/usr/bin/git commit -m "Updated requirements.txt (automatically)"',
-        "/usr/bin/git push origin master",
-        "/usr/bin/git push github master",
-    ]
-
-    proc = await asyncio.create_subprocess_shell(
-        " && ".join(git_commands),
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await proc.communicate()
-    if stdout:
-        logger.info("Committing changes for %s: %s", repo_name, stdout.decode())
-    if stderr:
-        logger.warning(
-            "Error committing changes for %s: %s", repo_name, stderr.decode()
-        )
+    repo = git.Repo(folder_name)
+    repo.index.commit("Updated requirements.txt (automatically)")
+    repo.remotes.origin.push("master")
+    repo.remotes.github.push("master")
 
     return redirect(f"/sites/{repo_name}")
 
