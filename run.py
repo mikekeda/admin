@@ -20,9 +20,10 @@ if __name__ == "__main__":
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
             try:
                 sock.bind(app.config["SOCKET_FILE"])
-                app.run(sock=sock, access_log=False)
 
                 os.chmod(app.config["SOCKET_FILE"], 0o775)
                 os.chown(app.config["SOCKET_FILE"], -1, grp.getgrnam("nginx").gr_gid)
+
+                app.run(sock=sock, access_log=False)
             except OSError as e:
                 logger.warning(e)
