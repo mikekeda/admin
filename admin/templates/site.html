@@ -23,8 +23,10 @@
         <img src="{{ site.coverage }}" alt="Coverage Badge" style="max-width:100%;">
         {% endif %}
 
-        {% for status in supervisor_statuses %}
-        <span class="status-dot {% if status %}green{% else %}red{% endif %}"></span>
+        {% for log_file, status in logs %}
+        <a href="/sites/{{ site.title }}/{{ log_file }}" class="{% if status == 'RUNNING' %}green{% else %}red{% endif %}-text" title="{{ status }}">
+            {{ log_file }}
+        </a>
         {% endfor %}
 
         <a href="https://github.com/mikekeda/{{ site.name }}" class="right" target=”_blank” rel="nofollow">

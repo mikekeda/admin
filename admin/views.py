@@ -1,170 +1,34 @@
-from __future__ import annotations
-
 import asyncio
 import os
 import re
-import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta
-from functools import wraps
-from shlex import quote
-from typing import Optional
 
 import aiofiles
 import git
-from aiohttp import ClientConnectorError, ClientSession
+from aiohttp import ClientSession
 from sanic.exceptions import abort
-from sanic.log import logger
 from sanic.response import html
 from sanic.response import json as sanic_json
 from sanic.response import redirect
 from sanic.views import HTTPMethodView
-from sanic_session.base import SessionDict
 from sqlalchemy import and_
 
-from admin.app import app, jinja, session
+from admin.app import app, jinja
 from admin.forms import LoginForm
-from admin.models import APIKey, Metric, Repo, authenticate
-from admin.settings import API_KEY_HEADER, LOGIN_REDIRECT_URL, get_env_var
-
-
-def login_required():
-    """Authentication decorator."""
-
-    def decorator(f):
-        @wraps(f)
-        async def decorated_function(request, *args, **kwargs):
-            if request.ctx.session.get("user"):
-                return await f(request, *args, **kwargs)
-
-            # User is not authorized.
-            return redirect("/login")
-
-        return decorated_function
-
-    return decorator
-
-
-def api_authentication():
-    """Api authentication decorator."""
-
-    def decorator(f):
-        @wraps(f)
-        async def decorated_function(request, *args, **kwargs):
-            token = request.headers.get(API_KEY_HEADER)
-            user = await APIKey.authenticate(token)
-
-            if user:
-                await login(request, user)
-                return await f(request, *args, **kwargs)
-
-            # User is not authorized.
-            return sanic_json({"status": "not_authorized"}, 403)
-
-        return decorated_function
-
-    return decorator
-
-
-async def login(request, user) -> None:
-    """Store user id and username in the session."""
-    request.ctx.session["user"] = {"id": user.id, "username": user.username}
-
-    # Refresh sid.
-    old_sid = session.interface.prefix + request.ctx.session.sid
-    request.ctx.session.sid = uuid.uuid4().hex  # generate new sid
-    await session.interface._delete_key(old_sid)  # delete old record from datastore
-
-
-def logout(request) -> None:
-    """Remove user id and username from the session."""
-    request.ctx.session = SessionDict(sid=request.ctx.session.sid)  # clear session
-    request.ctx.session.modified = True  # mark as modified to update sid in cookies
-
-
-async def get_site_status(url: str, _session: ClientSession) -> Optional[int]:
-    """Get site status."""
-    if not url:
-        return None
-
-    try:
-        async with _session.get(url) as resp:
-            status = resp.status
-    except ClientConnectorError:
-        status = 404
-
-    return status
-
-
-async def check_supervisor_status(process: str) -> str:
-    """Check supervisor status of given process."""
-    proc = await asyncio.create_subprocess_shell(
-        get_env_var("SUPERVISOR_CMD").format(process=quote(process)),
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await proc.communicate()
-    if stderr:
-        logger.warning("Error getting supervisor status: " + stderr.decode())
-
-    return stdout.decode().strip()
-
-
-async def get_pypi_version(
-    line: str, _session: ClientSession
-) -> tuple[str, Optional[str], Optional[str]]:
-    """Get the current and latest version for given package."""
-
-    if "==" not in line:
-        return line, None, None
-
-    package, current_version = line.split("==")
-    url = f"https://pypi.python.org/pypi/{package}/json"
-    try:
-        async with _session.get(url) as resp:
-            new_version = (await resp.json())["info"]["version"]
-    except (ClientConnectorError, KeyError) as e:
-        logger.warning("Error getting pypi info for %s: %s", package, repr(e))
-        return line, current_version, None  # we were now able to get latest version
-
-    return package, current_version, new_version
-
-
-async def get_requirements_status(
-    folder: str, file_name: str, show_only_outdated: bool = False
-) -> list[tuple[str, Optional[str], Optional[str]]]:
-    """Parse requirements.txt to get list of packages with current and latest versions."""
-    async with aiofiles.open(f"{folder}/{file_name}", "r") as f:
-        requirements = await f.readlines()
-
-    async with ClientSession() as _session:
-        versions = await asyncio.gather(
-            *[get_pypi_version(line.strip("\n"), _session) for line in requirements]
-        )
-
-    if show_only_outdated:
-        versions = [
-            (package, current_version, new_version)
-            for package, current_version, new_version in versions
-            if new_version is not None and current_version != new_version
-        ]
-
-    return versions
-
-
-async def update_requirements(folder: str):
-    """Update requirements.txt"""
-    for file_name in ("requirements.txt", "requirements-dev.txt"):
-        versions = await get_requirements_status(folder, file_name)
-
-        async with aiofiles.open(f"{folder}/{file_name}", "w") as f:
-            await f.writelines(
-                [
-                    ("==".join([package, new_version]) if new_version else package)
-                    + "\n"
-                    for package, _, new_version in versions
-                ]
-            )
+from admin.models import Metric, Repo, authenticate
+from admin.settings import LOGIN_REDIRECT_URL, get_env_var
+from admin.utils import (
+    api_authentication,
+    check_supervisor_status,
+    get_log_files,
+    get_requirements_status,
+    get_site_status,
+    login,
+    login_required,
+    logout,
+    update_requirements,
+)
 
 
 @app.route("/")
@@ -201,21 +65,7 @@ async def homepage(request):
 
     for status, repo in zip(site_statuses, repos):
         repo.status = status == 200
-        repo.logs = []
-        if len(repo.processes) >= 1:
-            processes.append(repo.process_name)
-            repo.logs.append(("error.log", process_statuses[repo.process_name]))
-            repo.logs.append(("out.log", process_statuses[repo.process_name]))
-        if len(repo.processes) >= 2:
-            processes.append(f"{repo.process_name}_celery")
-            repo.logs.append(
-                ("worker.log", process_statuses[f"{repo.process_name}_celery"])
-            )
-        if len(repo.processes) >= 3:
-            processes.append(f"{repo.process_name}_celerybeat")
-            repo.logs.append(
-                ("beat.log", process_statuses[f"{repo.process_name}_celerybeat"])
-            )
+        repo.logs = get_log_files(repo, process_statuses)
 
     return html(jinja.render_string("sites.html", request, repos=repos))
 
@@ -278,13 +128,16 @@ async def logs_page(request, repo_name: str):
 
     metrics = [
         [
-            metric.timestamp.isoformat(),
-            metric.response_time.microseconds / 1000,
-            metric.status_code,
-            metric.response_size,
+            m.timestamp.isoformat(),
+            m.response_time.microseconds / 1000,
+            m.status_code,
+            m.response_size,
         ]
-        for metric in metrics
+        for m in metrics
     ]
+
+    process_statuses = dict(zip(processes, supervisor_statuses))
+    logs = get_log_files(site, process_statuses)
 
     folder = get_env_var("REPO_PREFIX") + site.process_name
     requirements_status, requirements_dev_status = await asyncio.gather(
@@ -304,7 +157,7 @@ async def logs_page(request, repo_name: str):
             site=site,
             metrics=metrics,
             site_status=site_status,
-            supervisor_statuses=supervisor_statuses,
+            logs=logs,
             requirements_statuses=requirements_statuses,
         )
     )
