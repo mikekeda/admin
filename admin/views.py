@@ -107,7 +107,7 @@ async def metric(request):
 
 @app.route("/sites/<repo_name>")
 @login_required()
-async def logs_page(request, repo_name: str):
+async def repo_page(request, repo_name: str):
     site = await Repo.query.where(Repo.title == repo_name).gino.first()
     if not site:
         abort(404)
