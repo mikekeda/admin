@@ -8,7 +8,17 @@
     <div class="nav-wrapper">
         <div class="container">
             <a href="/" class="breadcrumb">Sites</a>
-            <a href="/sites/{{ site_name }}" class="breadcrumb">{{ site.title }}</a>
+
+            <!-- Dropdown Trigger -->
+            <a class='breadcrumb dropdown-trigger' href='#' data-target='sites-dropdown'>{{ site.title }}</a>
+
+            <!-- Dropdown Structure -->
+            <ul id='sites-dropdown' class='dropdown-content'>
+                {% for title in sites %}
+                <li><a href="/sites/{{ title }}">{{ title }}</a></li>
+                {% endfor %}
+            </ul>
+
         </div>
     </div>
 </nav>

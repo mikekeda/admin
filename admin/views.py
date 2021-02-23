@@ -108,6 +108,11 @@ async def metric(request):
 @app.route("/sites/<repo_name>")
 @login_required()
 async def repo_page(request, repo_name: str):
+    sites = (
+        await Repo.query.with_only_columns([Repo.title]).order_by(Repo.title).gino.all()
+    )
+    sites = [site.title for site in sites]
+
     site = await Repo.query.where(Repo.title == repo_name).gino.first()
     if not site:
         abort(404)
@@ -158,6 +163,7 @@ async def repo_page(request, repo_name: str):
             metrics=metrics,
             site_status=site_status,
             logs=logs,
+            sites=sites,
             requirements_statuses=requirements_statuses,
         )
     )
