@@ -14,12 +14,12 @@ from admin.template_tags import get_item
 
 app = Sanic(__name__)
 app.config.update(SANIC_CONFIG)
-app.static('/static', './static')
+app.static("/static", "./static")
 
 db = Gino()
 
 # Set jinja_env and session_interface to None to avoid code style warning.
-app.jinja_env = namedtuple('JinjaEnv', ['globals'])({})
+app.jinja_env = namedtuple("JinjaEnv", ["globals"])({})
 
 jinja = SanicJinja2(app)
 app.jinja_env.globals.update(get_item=get_item)
@@ -27,7 +27,7 @@ app.jinja_env.globals.update(get_item=get_item)
 session = Session()
 
 
-@app.listener('before_server_start')
+@app.listener("before_server_start")
 async def init_cache(_app, loop):
     """Initialize db connections, session_interface and cache."""
     if _app.config.get("DB_DSN"):
@@ -52,15 +52,17 @@ async def init_cache(_app, loop):
         **_app.config.setdefault("DB_KWARGS", dict()),
     )
 
-    _app.redis = await aioredis.create_redis_pool(_app.config['redis'])
+    _app.redis = await aioredis.create_redis_pool(_app.config["redis"])
 
     # Pass the getter method for the connection pool into the session.
-    session.init_app(_app, interface=AIORedisSessionInterface(_app.redis, samesite='Lax'))
+    session.init_app(
+        _app, interface=AIORedisSessionInterface(_app.redis, samesite="Lax")
+    )
 
     caches.set_config(REDIS_CACHE_CONFIG)
 
 
-@app.listener('after_server_stop')
+@app.listener("after_server_stop")
 async def close_redis_connections(_app, _):
     """Close db and redis connections."""
     await db.pop_bind().close()
@@ -68,12 +70,12 @@ async def close_redis_connections(_app, _):
     await _app.redis.wait_closed()
 
 
-@app.middleware('request')
+@app.middleware("request")
 async def add_session_to_request(request):
     """Set user value for templates."""
     conn = await db.acquire(lazy=True)
     request.ctx.connection = conn
-    request.ctx.user = request.ctx.session.get('user')
+    request.ctx.user = request.ctx.session.get("user")
 
 
 @app.middleware("response")
@@ -92,9 +94,9 @@ async def exception_handler(request, exception: Exception, **__):
         logger.exception(exception)
 
     return jinja.render(
-        'error.html',
+        "error.html",
         request,
         status=status_code,
         status_code=status_code,
-        message=" ".join(str(arg) for arg in exception.args)
+        message=" ".join(str(arg) for arg in exception.args),
     )

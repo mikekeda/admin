@@ -124,7 +124,12 @@ async def repo_page(request, repo_name: str):
 
     async with ClientSession() as _session:
         metrics, site_status, supervisor_statuses = await asyncio.gather(
-            Metric.query.where(Metric.site == site.id).gino.all(),
+            Metric.query.where(
+                and_(
+                    Metric.site == site.id,
+                    Metric.timestamp > datetime.now() - timedelta(weeks=1),
+                )
+            ).gino.all(),
             get_site_status(site.url, _session),
             asyncio.gather(  # check supervisor statuses
                 *[check_supervisor_status(process) for process in processes]

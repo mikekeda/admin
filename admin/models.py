@@ -13,8 +13,7 @@ from admin.settings import SECRET_KEY
 
 def hash_password(value: str) -> str:
     """Hash user password to store hash in a database."""
-    return hashpw(value.encode('utf-8'), SECRET_KEY.encode(
-        'utf-8')).decode("utf-8")
+    return hashpw(value.encode("utf-8"), SECRET_KEY.encode("utf-8")).decode("utf-8")
 
 
 async def authenticate(username: str, password: str) -> "User":
@@ -26,7 +25,8 @@ async def authenticate(username: str, password: str) -> "User":
 
 class User(db.Model):
     """User model."""
-    __tablename__ = 'user'
+
+    __tablename__ = "user"
 
     id = db.Column(db.Integer, primary_key=True)
     password = db.Column(db.String(255), nullable=False)
@@ -35,20 +35,22 @@ class User(db.Model):
     first_name = db.Column(db.String(64))
     last_name = db.Column(db.String(64))
     email = db.Column(db.String(64), nullable=False, unique=True)
-    date_joined = db.Column(db.DateTime, nullable=False,
-                            default=datetime.datetime.utcnow)
+    date_joined = db.Column(
+        db.DateTime, nullable=False, default=datetime.datetime.utcnow
+    )
 
     def __init__(self, *args, **kwargs):
         """Hash password."""
-        if 'password' in kwargs:
-            kwargs['password'] = hash_password(kwargs['password'])
+        if "password" in kwargs:
+            kwargs["password"] = hash_password(kwargs["password"])
 
         super().__init__(*args, **kwargs)
 
 
 class Repo(db.Model):
     """Repo model."""
-    __tablename__ = 'repos'
+
+    __tablename__ = "repos"
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(64), nullable=False, unique=True)
@@ -65,7 +67,8 @@ class Repo(db.Model):
 
 class Metric(db.Model):
     """Metric model."""
-    __tablename__ = 'metrics'
+
+    __tablename__ = "metrics"
 
     id = db.Column(db.Integer, primary_key=True)
     site = db.Column(db.Integer, db.ForeignKey("repos.id"))
@@ -77,6 +80,7 @@ class Metric(db.Model):
 
 class APIKey(db.Model):
     """API keys model."""
+
     __tablename__ = "api_keys"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -84,11 +88,19 @@ class APIKey(db.Model):
     prefix = db.Column(db.String(8), nullable=False, unique=True)
     hashed_key = db.Column(db.String(100), nullable=False)
     created = db.Column(db.DateTime, default=datetime.datetime.now)
-    name = db.Column(db.String(50), nullable=False,
-                     doc="A free-form name for the API key. Need not be unique. 50 characters max.")
-    revoked = db.Column(db.Boolean(), default=False,
-                        doc="If the API key is revoked, clients cannot use it anymore. (This cannot be undone.)")
-    expiry_date = db.Column(db.DateTime, doc="Once API key expires, clients cannot use it anymore.")
+    name = db.Column(
+        db.String(50),
+        nullable=False,
+        doc="A free-form name for the API key. Need not be unique. 50 characters max.",
+    )
+    revoked = db.Column(
+        db.Boolean(),
+        default=False,
+        doc="If the API key is revoked, clients cannot use it anymore. (This cannot be undone.)",
+    )
+    expiry_date = db.Column(
+        db.DateTime, doc="Once API key expires, clients cannot use it anymore."
+    )
 
     @classmethod
     async def authenticate(cls, token: str) -> Optional[User]:
@@ -97,14 +109,20 @@ class APIKey(db.Model):
             return None
 
         prefix, _, key = token.partition(".")
-        api_key = await cls.load(user=User).query.where(and_(
-            cls.prefix == prefix,
-            cls.revoked.is_(False),
-            or_(
-                cls.expiry_date >= datetime.datetime.now(),
-                cls.expiry_date.is_(None),
-            ),
-        )).gino.first()
+        api_key = (
+            await cls.load(user=User)
+            .query.where(
+                and_(
+                    cls.prefix == prefix,
+                    cls.revoked.is_(False),
+                    or_(
+                        cls.expiry_date >= datetime.datetime.now(),
+                        cls.expiry_date.is_(None),
+                    ),
+                )
+            )
+            .gino.first()
+        )
         if api_key and api_key.hashed_key == hash_password(key):
             return api_key.user
 
@@ -113,7 +131,9 @@ class APIKey(db.Model):
     @staticmethod
     def _get_secure_random_string(length) -> str:
         """Generate random string."""
-        secure_str = ''.join((secrets.choice(string.ascii_letters) for _ in range(length)))
+        secure_str = "".join(
+            (secrets.choice(string.ascii_letters) for _ in range(length))
+        )
         return secure_str
 
     @classmethod
