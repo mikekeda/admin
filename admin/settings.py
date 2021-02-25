@@ -55,9 +55,9 @@ REDIS_CACHE_CONFIG = {
 }
 
 # CELERY STUFF
-CELERY_BROKER_URL = 'redis://localhost:6379/8'
-CELERY_result_backend = 'redis://localhost:6379/8'
-CELERY_accept_content = ['application/json']
-CELERY_task_serializer = 'json'
-CELERY_result_serializer = 'json'
-CELERY_timezone = 'UTC'
+CELERY_BROKER_URL = "redis://localhost:6379/8"
+CELERY_result_backend = "redis://localhost:6379/8"
+CELERY_accept_content = ["application/json"]
+CELERY_task_serializer = "json"
+CELERY_result_serializer = "json"
+CELERY_timezone = "UTC"

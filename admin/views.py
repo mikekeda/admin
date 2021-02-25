@@ -1,110 +1,34 @@
 import asyncio
 import os
 import re
-import uuid
 from collections import defaultdict
 from datetime import datetime, timedelta
-from functools import wraps
-from shlex import quote
-from typing import Optional
 
 import aiofiles
-from aiohttp import ClientConnectorError, ClientSession
+import git
+from aiohttp import ClientSession
 from sanic.exceptions import abort
-from sanic.log import logger
 from sanic.response import html
 from sanic.response import json as sanic_json
 from sanic.response import redirect
 from sanic.views import HTTPMethodView
-from sanic_session.base import SessionDict
 from sqlalchemy import and_
 
-from admin.app import app, jinja, session
+from admin.app import app, jinja
 from admin.forms import LoginForm
-from admin.models import APIKey, Metric, Repo, authenticate
-from admin.settings import API_KEY_HEADER, LOGIN_REDIRECT_URL, get_env_var
-
-
-def login_required():
-    """Authentication decorator."""
-
-    def decorator(f):
-        @wraps(f)
-        async def decorated_function(request, *args, **kwargs):
-            if request.ctx.session.get("user"):
-                return await f(request, *args, **kwargs)
-
-            # User is not authorized.
-            return redirect("/login")
-
-        return decorated_function
-
-    return decorator
-
-
-def api_authentication():
-    """Api authentication decorator."""
-
-    def decorator(f):
-        @wraps(f)
-        async def decorated_function(request, *args, **kwargs):
-            token = request.headers.get(API_KEY_HEADER)
-            user = await APIKey.authenticate(token)
-
-            if user:
-                await login(request, user)
-                return await f(request, *args, **kwargs)
-
-            # User is not authorized.
-            return sanic_json({"status": "not_authorized"}, 403)
-
-        return decorated_function
-
-    return decorator
-
-
-async def login(request, user) -> None:
-    """Store user id and username in the session."""
-    request.ctx.session["user"] = {"id": user.id, "username": user.username}
-
-    # Refresh sid.
-    old_sid = session.interface.prefix + request.ctx.session.sid
-    request.ctx.session.sid = uuid.uuid4().hex  # generate new sid
-    await session.interface._delete_key(old_sid)  # delete old record from datastore
-
-
-def logout(request) -> None:
-    """Remove user id and username from the session."""
-    request.ctx.session = SessionDict(sid=request.ctx.session.sid)  # clear session
-    request.ctx.session.modified = True  # mark as modified to update sid in cookies
-
-
-async def get_site_status(url: str, _session: ClientSession) -> Optional[int]:
-    """Get site status."""
-    if not url:
-        return None
-
-    try:
-        async with _session.get(url) as resp:
-            status = resp.status
-    except ClientConnectorError:
-        status = 404
-
-    return status
-
-
-async def check_supervisor_status(process: str) -> str:
-    """Check supervisor status of given process."""
-    proc = await asyncio.create_subprocess_shell(
-        get_env_var("SUPERVISOR_CMD").format(process=quote(process)),
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await proc.communicate()
-    if stderr:
-        logger.warning("Error getting supervisor status: " + stderr.decode())
-
-    return stdout.decode().strip()
+from admin.models import Metric, Repo, authenticate
+from admin.settings import LOGIN_REDIRECT_URL, get_env_var
+from admin.utils import (
+    api_authentication,
+    check_supervisor_status,
+    get_log_files,
+    get_requirements_status,
+    get_site_status,
+    login,
+    login_required,
+    logout,
+    update_requirements,
+)
 
 
 @app.route("/")
@@ -141,21 +65,7 @@ async def homepage(request):
 
     for status, repo in zip(site_statuses, repos):
         repo.status = status == 200
-        repo.logs = []
-        if len(repo.processes) >= 1:
-            processes.append(repo.process_name)
-            repo.logs.append(("error.log", process_statuses[repo.process_name]))
-            repo.logs.append(("out.log", process_statuses[repo.process_name]))
-        if len(repo.processes) >= 2:
-            processes.append(f"{repo.process_name}_celery")
-            repo.logs.append(
-                ("worker.log", process_statuses[f"{repo.process_name}_celery"])
-            )
-        if len(repo.processes) >= 3:
-            processes.append(f"{repo.process_name}_celerybeat")
-            repo.logs.append(
-                ("beat.log", process_statuses[f"{repo.process_name}_celerybeat"])
-            )
+        repo.logs = get_log_files(repo, process_statuses)
 
     return html(jinja.render_string("sites.html", request, repos=repos))
 
@@ -197,8 +107,15 @@ async def metric(request):
 
 @app.route("/sites/<repo_name>")
 @login_required()
-async def logs_page(request, repo_name: str):
+async def repo_page(request, repo_name: str):
+    sites = (
+        await Repo.query.with_only_columns([Repo.title]).order_by(Repo.title).gino.all()
+    )
+    sites = [site.title for site in sites]
+
     site = await Repo.query.where(Repo.title == repo_name).gino.first()
+    if not site:
+        abort(404)
 
     processes = [
         f"{site.process_name}{['', '_celery', '_celerybeat'][i]}"
@@ -207,7 +124,12 @@ async def logs_page(request, repo_name: str):
 
     async with ClientSession() as _session:
         metrics, site_status, supervisor_statuses = await asyncio.gather(
-            Metric.query.where(Metric.site == site.id).gino.all(),
+            Metric.query.where(
+                and_(
+                    Metric.site == site.id,
+                    Metric.timestamp > datetime.now() - timedelta(weeks=1),
+                )
+            ).gino.all(),
             get_site_status(site.url, _session),
             asyncio.gather(  # check supervisor statuses
                 *[check_supervisor_status(process) for process in processes]
@@ -216,13 +138,27 @@ async def logs_page(request, repo_name: str):
 
     metrics = [
         [
-            metric.timestamp.isoformat(),
-            metric.response_time.microseconds / 1000,
-            metric.status_code,
-            metric.response_size,
+            m.timestamp.isoformat(),
+            m.response_time.microseconds / 1000,
+            m.status_code,
+            m.response_size,
         ]
-        for metric in metrics
+        for m in metrics
     ]
+
+    process_statuses = dict(zip(processes, supervisor_statuses))
+    logs = get_log_files(site, process_statuses)
+
+    folder = get_env_var("REPO_PREFIX") + site.process_name
+    requirements_status, requirements_dev_status = await asyncio.gather(
+        get_requirements_status(folder, "requirements.txt", True),
+        get_requirements_status(folder, "requirements-dev.txt", True),
+    )
+    requirements_statuses = {}
+    if requirements_status:
+        requirements_statuses["requirements.txt"] = requirements_status
+    if requirements_dev_status:
+        requirements_statuses["requirements-dev.txt"] = requirements_dev_status
 
     return html(
         jinja.render_string(
@@ -231,9 +167,33 @@ async def logs_page(request, repo_name: str):
             site=site,
             metrics=metrics,
             site_status=site_status,
-            supervisor_statuses=supervisor_statuses,
+            logs=logs,
+            sites=sites,
+            requirements_statuses=requirements_statuses,
         )
     )
+
+
+@app.route("/sites/<repo_name>/update", methods=["POST"])
+@login_required()
+async def update_requirements_txt(_, repo_name: str):
+    """Update requirements.txt"""
+    folder_name = get_env_var("REPO_PREFIX") + (
+        repo_name.lower()
+        .replace("-", "_")
+        .replace(" ", "_")
+        .replace("/", "")
+        .replace(".", "")
+    )
+    await update_requirements(folder_name)
+
+    repo = git.Repo(folder_name)
+    repo.index.add(["requirements.txt", "requirements-dev.txt"])
+    repo.index.commit("Updated requirements.txt (automatically)")
+    repo.remotes.origin.push("master")
+    repo.remotes.github.push("master")
+
+    return redirect(f"/sites/{repo_name}")
 
 
 @app.route("/sites/<repo_name>/<file_name>")
@@ -266,8 +226,6 @@ async def logs_page(request, repo_name: str, file_name: str):
 @app.route("/about")
 async def about_page(request):
     """About page."""
-    # from admin.models import db
-    # await db.gino.create_all()
     return html(jinja.render_string("about.html", request))
 
 

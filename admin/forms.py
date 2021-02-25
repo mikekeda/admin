@@ -5,5 +5,6 @@ from wtforms.validators import DataRequired
 
 class LoginForm(SanicForm):
     """Login form."""
-    username = StringField('Username', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
+
+    username = StringField("Username", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired()])

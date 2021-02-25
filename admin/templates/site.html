@@ -8,7 +8,17 @@
     <div class="nav-wrapper">
         <div class="container">
             <a href="/" class="breadcrumb">Sites</a>
-            <a href="/sites/{{ site_name }}" class="breadcrumb">{{ site.title }}</a>
+
+            <!-- Dropdown Trigger -->
+            <a class='breadcrumb dropdown-trigger' href='#' data-target='sites-dropdown'>{{ site.title }}</a>
+
+            <!-- Dropdown Structure -->
+            <ul id='sites-dropdown' class='dropdown-content'>
+                {% for title in sites %}
+                <li><a href="/sites/{{ title }}">{{ title }}</a></li>
+                {% endfor %}
+            </ul>
+
         </div>
     </div>
 </nav>
@@ -23,8 +33,10 @@
         <img src="{{ site.coverage }}" alt="Coverage Badge" style="max-width:100%;">
         {% endif %}
 
-        {% for status in supervisor_statuses %}
-        <span class="status-dot {% if status %}green{% else %}red{% endif %}"></span>
+        {% for log_file, status in logs %}
+        <a href="/sites/{{ site.title }}/{{ log_file }}" class="{% if status == 'RUNNING' %}green{% else %}red{% endif %}-text" title="{{ status }}">
+            {{ log_file }}
+        </a>
         {% endfor %}
 
         <a href="https://github.com/mikekeda/{{ site.name }}" class="right" target=”_blank” rel="nofollow">
@@ -32,8 +44,45 @@
         </a>
     </p>
 
-    <div id="ping_div"></div>
     <div class="row">
+        {% if requirements_statuses %}
+        <form action="/sites/{{ site.title }}/update" method="POST">
+            <button class="btn waves-effect waves-light" type="submit" name="action">Update requirements
+                <i class="material-icons right">send</i>
+            </button>
+        </form>
+        {% endif %}
+
+        {% for file, requirements_status in requirements_statuses.items() %}
+        {% if requirements_status %}
+        <h4>Outdated requirements in {{ file }}:</h4>
+        <table class="table-list white bordered">
+            <thead class="grey darken-2">
+                <tr>
+                    <th class="no-br-radius white-text">Package</th>
+                    <th class="no-br-radius white-text">Current</th>
+                    <th class="no-br-radius white-text">Latest</th>
+                </tr>
+            </thead>
+
+            <tbody>
+            {% for package, current, latest in requirements_status %}
+            <tr>
+                <td>
+                    <a href="https://pypi.org/project/{{ package }}/" target=”_blank” rel="nofollow">
+                        {{ package }}
+                    </a>
+                </td>
+                <td>{{ current }}</td>
+                <td>{{ latest }}</td>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        {% endfor %}
+
+        <h4>Metrics:</h4>
+        <div id="ping_div"></div>
         <div id="status_div" class="left"></div>
         <div id="size_div" class="right"></div>
     </div>
