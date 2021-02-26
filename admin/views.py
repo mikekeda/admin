@@ -21,6 +21,7 @@ from admin.settings import LOGIN_REDIRECT_URL, get_env_var
 from admin.utils import (
     api_authentication,
     check_black_status,
+    check_security_headers,
     check_supervisor_status,
     get_log_files,
     get_requirements_status,
@@ -49,7 +50,12 @@ async def homepage(request):
 
     # Check site and supervisor statuses.
     async with ClientSession() as _session:
-        site_statuses, supervisor_statuses, black_statuses = await asyncio.gather(
+        (
+            site_statuses,
+            supervisor_statuses,
+            black_statuses,
+            security_headers_grades,
+        ) = await asyncio.gather(
             asyncio.gather(
                 *[  # check site statuses
                     get_site_status(repo.url, _session) for repo in repos
@@ -61,55 +67,26 @@ async def homepage(request):
                 ]
             ),
             asyncio.gather(
-                *[  # check supervisor statuses
-                    check_black_status(repo) for repo in repos
+                *[check_black_status(repo) for repo in repos]  # check if code is black
+            ),
+            asyncio.gather(
+                *[  # get security headers grade
+                    check_security_headers(repo, _session) for repo in repos
                 ]
             ),
         )
 
     process_statuses = dict(zip(processes, supervisor_statuses))
 
-    for status, repo, black_status in zip(site_statuses, repos, black_statuses):
+    for status, repo, black_status, security_headers_grade in zip(
+        site_statuses, repos, black_statuses, security_headers_grades
+    ):
         repo.status = status == 200
         repo.logs = get_log_files(repo, process_statuses)
         repo.black_status = black_status
+        repo.security_headers_grade = security_headers_grade
 
     return html(jinja.render_string("sites.html", request, repos=repos))
-
-
-@app.route("/metrics")
-@login_required()
-async def metric(request):
-    sites = await Repo.query.order_by(Repo.id).where(Repo.url.isnot(None)).gino.all()
-    site_ids = [s.id for s in sites]
-
-    ping_dict = defaultdict(lambda: defaultdict(int))
-    status_dict = defaultdict(lambda: defaultdict(int))
-    metrics = await Metric.query.where(
-        and_(
-            Metric.timestamp > datetime.now() - timedelta(days=1),
-            Metric.site.in_(site_ids),
-        )
-    ).gino.all()
-    for m in metrics:
-        timestamp = m.timestamp.isoformat(timespec="minutes")
-        ping_dict[timestamp][m.site] = m.response_time.microseconds / 1000
-        status_dict[timestamp][m.site] = m.status_code
-
-    pings = [
-        [timestamp] + [ping_dict[timestamp][site_id] for site_id in site_ids]
-        for timestamp in ping_dict
-    ]
-    statuses = [
-        [timestamp] + [status_dict[timestamp][site_id] for site_id in site_ids]
-        for timestamp in status_dict
-    ]
-
-    return html(
-        jinja.render_string(
-            "metric.html", request, sites=sites, pings=pings, statuses=statuses
-        )
-    )
 
 
 @app.route("/sites/<repo_name>")
@@ -139,6 +116,7 @@ async def repo_page(request, repo_name: str):
             requirements_status,
             requirements_dev_status,
             is_black,
+            security_headers_grade,
         ) = await asyncio.gather(
             Metric.query.where(
                 and_(
@@ -153,6 +131,7 @@ async def repo_page(request, repo_name: str):
             get_requirements_status(folder, "requirements.txt", True),
             get_requirements_status(folder, "requirements-dev.txt", True),
             check_black_status(site),
+            check_security_headers(site, _session),
         )
 
     metrics = [
@@ -185,6 +164,7 @@ async def repo_page(request, repo_name: str):
             sites=sites,
             requirements_statuses=requirements_statuses,
             is_black=is_black,
+            security_headers_grade=security_headers_grade,
         )
     )
 
@@ -234,6 +214,41 @@ async def logs_page(request, repo_name: str, file_name: str):
             logs="".join(logs),
             site_name=repo_name,
             file_name=file_name,
+        )
+    )
+
+
+@app.route("/metrics")
+@login_required()
+async def metric(request):
+    sites = await Repo.query.order_by(Repo.id).where(Repo.url.isnot(None)).gino.all()
+    site_ids = [s.id for s in sites]
+
+    ping_dict = defaultdict(lambda: defaultdict(int))
+    status_dict = defaultdict(lambda: defaultdict(int))
+    metrics = await Metric.query.where(
+        and_(
+            Metric.timestamp > datetime.now() - timedelta(days=1),
+            Metric.site.in_(site_ids),
+        )
+    ).gino.all()
+    for m in metrics:
+        timestamp = m.timestamp.isoformat(timespec="minutes")
+        ping_dict[timestamp][m.site] = m.response_time.microseconds / 1000
+        status_dict[timestamp][m.site] = m.status_code
+
+    pings = [
+        [timestamp] + [ping_dict[timestamp][site_id] for site_id in site_ids]
+        for timestamp in ping_dict
+    ]
+    statuses = [
+        [timestamp] + [status_dict[timestamp][site_id] for site_id in site_ids]
+        for timestamp in status_dict
+    ]
+
+    return html(
+        jinja.render_string(
+            "metric.html", request, sites=sites, pings=pings, statuses=statuses
         )
     )
 

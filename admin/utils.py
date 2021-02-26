@@ -102,6 +102,7 @@ async def check_supervisor_status(process: str) -> str:
 
 
 async def check_black_status(repo) -> bool:
+    """Check if code is black."""
     folder = get_env_var("REPO_PREFIX") + repo.process_name
     proc = await asyncio.create_subprocess_shell(
         f'cd {folder} && black --check . --exclude "(migrations|alembic)"',
@@ -111,6 +112,16 @@ async def check_black_status(repo) -> bool:
     _, stderr = await proc.communicate()
 
     return "All done!" in stderr.decode()
+
+
+async def check_security_headers(repo, _session: ClientSession) -> str:
+    """Return security headers grade."""
+    if not repo.url:
+        return ""
+
+    url = f"https://securityheaders.io/?hide=on&followRedirects=on&q={repo.url}"
+    async with _session.get(url) as resp:
+        return resp.headers.get("X-Grade", "")
 
 
 def get_log_files(repo, process_statuses: dict[str, str]) -> Iterator[tuple[str, str]]:

@@ -12,6 +12,7 @@
         <th class="no-br-radius white-text">Name</th>
         <th class="no-br-radius white-text">Logs</th>
         <th class="no-br-radius white-text">Badges</th>
+        <th class="no-br-radius white-text" title="Security headers grade"></th>
       </tr>
     </thead>
 
@@ -49,6 +50,13 @@
           <a href="https://github.com/mikekeda/{{ repo.name }}" target=”_blank” rel="nofollow">
             <img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Black Badge" style="max-width:100%;">
           </a>
+          {% endif %}
+        </td>
+        <td>
+          {% if repo.security_headers_grade %}
+            <a href="https://securityheaders.com/?followRedirects=on&q={{ repo.url }}" target=”_blank” rel="nofollow">
+              {{ repo.security_headers_grade }}
+            </a>
           {% endif %}
         </td>
       </tr>

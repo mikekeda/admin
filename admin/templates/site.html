@@ -43,6 +43,11 @@
             <img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Black Badge" style="max-width:100%;">
         </a>
         {% endif %}
+        {% if security_headers_grade %}
+        <a href="https://securityheaders.com/?followRedirects=on&q={{ site.url }}" target=”_blank” rel="nofollow">
+            {{ security_headers_grade }}
+        </a>
+        {% endif %}
 
         {% for log_file, status in logs %}
         <a href="/sites/{{ site.title }}/{{ log_file }}" class="{% if status == 'RUNNING' %}green{% else %}red{% endif %}-text" title="{{ status }}">
