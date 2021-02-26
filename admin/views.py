@@ -20,6 +20,7 @@ from admin.models import Metric, Repo, authenticate
 from admin.settings import LOGIN_REDIRECT_URL, get_env_var
 from admin.utils import (
     api_authentication,
+    check_black_status,
     check_supervisor_status,
     get_log_files,
     get_requirements_status,
@@ -48,7 +49,7 @@ async def homepage(request):
 
     # Check site and supervisor statuses.
     async with ClientSession() as _session:
-        site_statuses, supervisor_statuses = await asyncio.gather(
+        site_statuses, supervisor_statuses, black_statuses = await asyncio.gather(
             asyncio.gather(
                 *[  # check site statuses
                     get_site_status(repo.url, _session) for repo in repos
@@ -59,13 +60,19 @@ async def homepage(request):
                     check_supervisor_status(process) for process in processes
                 ]
             ),
+            asyncio.gather(
+                *[  # check supervisor statuses
+                    check_black_status(repo) for repo in repos
+                ]
+            ),
         )
 
     process_statuses = dict(zip(processes, supervisor_statuses))
 
-    for status, repo in zip(site_statuses, repos):
+    for status, repo, black_status in zip(site_statuses, repos, black_statuses):
         repo.status = status == 200
         repo.logs = get_log_files(repo, process_statuses)
+        repo.black_status = black_status
 
     return html(jinja.render_string("sites.html", request, repos=repos))
 
@@ -108,22 +115,31 @@ async def metric(request):
 @app.route("/sites/<repo_name>")
 @login_required()
 async def repo_page(request, repo_name: str):
+    site = await Repo.query.where(Repo.title == repo_name).gino.first()
+    if not site:
+        abort(404)
+
     sites = (
         await Repo.query.with_only_columns([Repo.title]).order_by(Repo.title).gino.all()
     )
     sites = [site.title for site in sites]
-
-    site = await Repo.query.where(Repo.title == repo_name).gino.first()
-    if not site:
-        abort(404)
 
     processes = [
         f"{site.process_name}{['', '_celery', '_celerybeat'][i]}"
         for i, _ in enumerate(site.processes)
     ]
 
+    folder = get_env_var("REPO_PREFIX") + site.process_name
+
     async with ClientSession() as _session:
-        metrics, site_status, supervisor_statuses = await asyncio.gather(
+        (
+            metrics,
+            site_status,
+            supervisor_statuses,
+            requirements_status,
+            requirements_dev_status,
+            is_black,
+        ) = await asyncio.gather(
             Metric.query.where(
                 and_(
                     Metric.site == site.id,
@@ -134,6 +150,9 @@ async def repo_page(request, repo_name: str):
             asyncio.gather(  # check supervisor statuses
                 *[check_supervisor_status(process) for process in processes]
             ),
+            get_requirements_status(folder, "requirements.txt", True),
+            get_requirements_status(folder, "requirements-dev.txt", True),
+            check_black_status(site),
         )
 
     metrics = [
@@ -149,11 +168,6 @@ async def repo_page(request, repo_name: str):
     process_statuses = dict(zip(processes, supervisor_statuses))
     logs = get_log_files(site, process_statuses)
 
-    folder = get_env_var("REPO_PREFIX") + site.process_name
-    requirements_status, requirements_dev_status = await asyncio.gather(
-        get_requirements_status(folder, "requirements.txt", True),
-        get_requirements_status(folder, "requirements-dev.txt", True),
-    )
     requirements_statuses = {}
     if requirements_status:
         requirements_statuses["requirements.txt"] = requirements_status
@@ -170,6 +184,7 @@ async def repo_page(request, repo_name: str):
             logs=logs,
             sites=sites,
             requirements_statuses=requirements_statuses,
+            is_black=is_black,
         )
     )
 

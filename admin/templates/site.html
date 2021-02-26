@@ -27,10 +27,21 @@
     <script src="https://www.gstatic.com/charts/loader.js"></script>
 
     <p>
-        <img src="https://requires.io/github/mikekeda/{{ site.name }}/requirements.svg?branch=master" alt="Requirements Status" style="max-width:100%;">
-        <img src="{{ site.codacy }}" alt="Codacy Badge" style="max-width:100%;">
+        <a href="https://requires.io/github/mikekeda/{{ site.name }}/requirements/?branch=master" target=”_blank” rel="nofollow">
+            <img src="https://requires.io/github/mikekeda/{{ site.name }}/requirements.svg?branch=master" alt="Requirements Status" style="max-width:100%;">
+        </a>
+        <a href="https://app.codacy.com/gh/mikekeda/{{ site.name }}/dashboard" target=”_blank” rel="nofollow">
+            <img src="{{ site.codacy }}" alt="Codacy Badge" style="max-width:100%;">
+        </a>
         {% if site.coverage %}
-        <img src="{{ site.coverage }}" alt="Coverage Badge" style="max-width:100%;">
+        <a href="https://app.codacy.com/gh/mikekeda/{{ site.name }}/dashboard" target=”_blank” rel="nofollow">
+            <img src="{{ site.coverage }}" alt="Coverage Badge" style="max-width:100%;">
+        </a>
+        {% endif %}
+        {% if is_black %}
+        <a href="https://github.com/mikekeda/{{ site.name }}" target=”_blank” rel="nofollow">
+            <img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Black Badge" style="max-width:100%;">
+        </a>
         {% endif %}
 
         {% for log_file, status in logs %}

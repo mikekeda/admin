@@ -49,7 +49,7 @@ async def init_cache(_app, loop):
         max_size=_app.config.setdefault("DB_POOL_MAX_SIZE", 5),
         ssl=_app.config.setdefault("DB_SSL"),
         loop=loop,
-        **_app.config.setdefault("DB_KWARGS", dict()),
+        **_app.config.setdefault("DB_KWARGS", {}),
     )
 
     _app.redis = await aioredis.create_redis_pool(_app.config["redis"])

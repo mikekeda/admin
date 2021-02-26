@@ -101,7 +101,19 @@ async def check_supervisor_status(process: str) -> str:
     return stdout.decode().strip()
 
 
-def get_log_files(repo, process_statuses) -> Iterator[tuple[str, str]]:
+async def check_black_status(repo) -> bool:
+    folder = get_env_var("REPO_PREFIX") + repo.process_name
+    proc = await asyncio.create_subprocess_shell(
+        f'cd {folder} && black --check . --exclude "(migrations|alembic)"',
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await proc.communicate()
+
+    return "All done!" in stderr.decode()
+
+
+def get_log_files(repo, process_statuses: dict[str, str]) -> Iterator[tuple[str, str]]:
     """Return log file name with corresponding supervisor status."""
     if len(repo.processes) >= 1:
         yield "error.log", process_statuses[repo.process_name]
