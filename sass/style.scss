@@ -56,14 +56,6 @@ body > .container {
   min-height: calc(100vh - 222px);
 
   #logs {
-    height: calc(100vh - 322px);
-  }
-
-  &.has-breadcrumb {
-    min-height: calc(100vh - 286px);
-
-    #logs {
-      height: calc(100vh - 386px);
-    }
+    height: calc(100vh - 300px);
   }
 }
