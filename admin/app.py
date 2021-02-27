@@ -2,9 +2,12 @@ from collections import namedtuple
 
 import aioredis
 from aiocache import caches
+from asyncio import AbstractEventLoop
 from gino import Gino
 from sanic import Sanic
 from sanic.log import logger
+from sanic.request import Request
+from sanic.response import HTTPResponse
 from sanic_jinja2 import SanicJinja2
 from sanic_session import AIORedisSessionInterface, Session
 from sqlalchemy.engine.url import URL
@@ -28,7 +31,7 @@ session = Session()
 
 
 @app.listener("before_server_start")
-async def init_cache(_app, loop):
+async def init_cache(_app: Sanic, loop: AbstractEventLoop) -> None:
     """Initialize db connections, session_interface and cache."""
     if _app.config.get("DB_DSN"):
         dsn = app.config.DB_DSN
@@ -63,7 +66,7 @@ async def init_cache(_app, loop):
 
 
 @app.listener("after_server_stop")
-async def close_redis_connections(_app, _):
+async def close_redis_connections(_app, _) -> None:
     """Close db and redis connections."""
     await db.pop_bind().close()
     _app.redis.close()
@@ -71,7 +74,7 @@ async def close_redis_connections(_app, _):
 
 
 @app.middleware("request")
-async def add_session_to_request(request):
+async def add_session_to_request(request: Request) -> None:
     """Set user value for templates."""
     conn = await db.acquire(lazy=True)
     request.ctx.connection = conn
@@ -79,14 +82,16 @@ async def add_session_to_request(request):
 
 
 @app.middleware("response")
-async def on_response(request, _):
+async def on_response(request: Request, _) -> None:
     conn = getattr(request.ctx, "connection", None)
     if conn is not None:
         await conn.release()
 
 
 @app.exception(Exception)
-async def exception_handler(request, exception: Exception, **__):
+async def exception_handler(
+    request: Request, exception: Exception, **__
+) -> HTTPResponse:
     """Exception handler returns error in json format."""
     status_code = getattr(exception, "status_code", 500)
 

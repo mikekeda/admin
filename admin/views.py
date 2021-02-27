@@ -196,10 +196,10 @@ async def update_requirements_txt(_, repo_name: str):
 async def logs_page(request, repo_name: str, file_name: str):
     """View site logs."""
 
-    if not file_name.endswith(".log") or not re.match("^[a-zA-Z-]*$", repo_name):
+    if not file_name.endswith(".log") or not re.match("^[a-zA-Z- ]*$", repo_name):
         abort(403)
 
-    folder = repo_name.lower().replace("-", "_")
+    folder = repo_name.lower().replace("-", "_").replace(" ", "_")
     logs = f"{get_env_var('LOG_FOLDER')}/{folder}/{file_name}"
     if not os.path.exists(logs):
         abort(404)

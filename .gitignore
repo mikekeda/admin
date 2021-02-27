@@ -3,6 +3,8 @@
 reports/
 .cache/
 .pytest_cache/
+.mypy_cache/
+.pyre/
 
 .coverage
 .DS_Store

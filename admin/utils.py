@@ -4,7 +4,7 @@ import asyncio
 import uuid
 from functools import wraps
 from shlex import quote
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Iterable
 
 import aiofiles
 from aiohttp import ClientConnectorError, ClientSession
@@ -157,7 +157,7 @@ async def get_pypi_version(
 
 async def get_requirements_status(
     folder: str, file_name: str, show_only_outdated: bool = False
-) -> list[tuple[str, Optional[str], Optional[str]]]:
+) -> Iterable[tuple[str, Optional[str], Optional[str]]]:
     """Parse requirements.txt to get list of packages with current and latest versions."""
     try:
         async with aiofiles.open(f"{folder}/{file_name}", "r") as f:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import secrets
 import string
@@ -16,7 +18,7 @@ def hash_password(value: str) -> str:
     return hashpw(value.encode("utf-8"), SECRET_KEY.encode("utf-8")).decode("utf-8")
 
 
-async def authenticate(username: str, password: str) -> "User":
+async def authenticate(username: str, password: str) -> Optional[User]:
     """If the given credentials are valid, return a User object."""
     user = await User.query.gino.first(username=username)
     if user and user.password == hash_password(password):
