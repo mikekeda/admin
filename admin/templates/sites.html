@@ -24,7 +24,7 @@
             <div class="status-dot {% if repo.status %}green{% else %}red{% endif %}"></div>
           </a>
         </td>
-        <td style="max-width: 150px;">
+        <td class="small-col">
           <a href="/sites/{{ repo.title }}">{{ repo.title }}</a>
         </td>
         <td>
@@ -36,19 +36,19 @@
         </td>
         <td>
           <a href="https://requires.io/github/mikekeda/{{ repo.name }}/requirements/?branch=master" target=”_blank” rel="nofollow">
-            <img src="https://requires.io/github/mikekeda/{{ repo.name }}/requirements.svg?branch=master" alt="Requirements Status" loading="lazy" style="max-width:100%;">
+            <img src="https://requires.io/github/mikekeda/{{ repo.name }}/requirements.svg?branch=master" alt="Requirements Status" loading="lazy">
           </a>
           <a href="https://app.codacy.com/gh/mikekeda/{{ repo.name }}/dashboard" target=”_blank” rel="nofollow">
-            <img src="{{ repo.codacy }}" alt="Codacy Badge" loading="lazy" style="max-width:100%;">
+            <img src="{{ repo.codacy }}" alt="Codacy Badge" loading="lazy">
           </a>
           {% if repo.coverage %}
           <a href="https://app.codacy.com/gh/mikekeda/{{ repo.name }}/dashboard" target=”_blank” rel="nofollow">
-            <img src="{{ repo.coverage }}" alt="Coverage Badge" loading="lazy" style="max-width:100%;">
+            <img src="{{ repo.coverage }}" alt="Coverage Badge" loading="lazy">
           </a>
           {% endif %}
           {% if repo.black_status %}
           <a href="https://github.com/mikekeda/{{ repo.name }}" target=”_blank” rel="nofollow">
-            <img src="https://img.shields.io/badge/code%20style-black-000000.svg" loading="lazy" alt="Black Badge" style="max-width:100%;">
+            <img src="https://img.shields.io/badge/code%20style-black-000000.svg" loading="lazy" alt="Black Badge">
           </a>
           {% endif %}
         </td>
