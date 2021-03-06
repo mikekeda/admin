@@ -24,7 +24,7 @@ db = Gino()
 # Set jinja_env and session_interface to None to avoid code style warning.
 app.jinja_env = namedtuple("JinjaEnv", ["globals"])({})
 
-jinja = SanicJinja2(app)
+jinja = SanicJinja2(app, autoescape=True)
 app.jinja_env.globals.update(get_item=get_item)
 
 session = Session()
