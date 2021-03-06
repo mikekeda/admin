@@ -12,7 +12,7 @@ from sanic_jinja2 import SanicJinja2
 from sanic_session import AIORedisSessionInterface, Session
 from sqlalchemy.engine.url import URL
 
-from admin.settings import REDIS_CACHE_CONFIG, SANIC_CONFIG, DEBUG
+from admin.settings import REDIS_CACHE_CONFIG, SANIC_CONFIG
 from admin.template_tags import get_item
 
 app = Sanic(__name__)
@@ -63,8 +63,8 @@ async def init_cache(_app: Sanic, loop: AbstractEventLoop) -> None:
         interface=AIORedisSessionInterface(
             _app.redis,
             samesite="Strict",
-            secure=not DEBUG,
-            cookie_name="session" if DEBUG else "__Host-session",
+            secure=not _app.config["DEBUG"],
+            cookie_name="session" if _app.config["DEBUG"] else "__Host-session",
         ),
     )
 
