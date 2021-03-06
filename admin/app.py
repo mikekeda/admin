@@ -12,7 +12,7 @@ from sanic_jinja2 import SanicJinja2
 from sanic_session import AIORedisSessionInterface, Session
 from sqlalchemy.engine.url import URL
 
-from admin.settings import REDIS_CACHE_CONFIG, SANIC_CONFIG
+from admin.settings import REDIS_CACHE_CONFIG, SANIC_CONFIG, DEBUG
 from admin.template_tags import get_item
 
 app = Sanic(__name__)
@@ -59,7 +59,10 @@ async def init_cache(_app: Sanic, loop: AbstractEventLoop) -> None:
 
     # Pass the getter method for the connection pool into the session.
     session.init_app(
-        _app, interface=AIORedisSessionInterface(_app.redis, samesite="Lax")
+        _app,
+        interface=AIORedisSessionInterface(
+            _app.redis, samesite="Lax", secure=not DEBUG
+        ),
     )
 
     caches.set_config(REDIS_CACHE_CONFIG)
