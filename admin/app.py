@@ -61,7 +61,10 @@ async def init_cache(_app: Sanic, loop: AbstractEventLoop) -> None:
     session.init_app(
         _app,
         interface=AIORedisSessionInterface(
-            _app.redis, samesite="Lax", secure=not DEBUG
+            _app.redis,
+            samesite="Strict",
+            secure=not DEBUG,
+            prefix="__Host-session:"
         ),
     )
 
