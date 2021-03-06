@@ -64,7 +64,7 @@ async def init_cache(_app: Sanic, loop: AbstractEventLoop) -> None:
             _app.redis,
             samesite="Strict",
             secure=not DEBUG,
-            prefix="__Host-session:"
+            cookie_name="__Host-session"
         ),
     )
 
