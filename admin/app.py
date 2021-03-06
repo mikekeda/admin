@@ -64,7 +64,7 @@ async def init_cache(_app: Sanic, loop: AbstractEventLoop) -> None:
             _app.redis,
             samesite="Strict",
             secure=not DEBUG,
-            cookie_name="__Host-session"
+            cookie_name="session" if DEBUG else "__Host-session",
         ),
     )
 
@@ -82,8 +82,7 @@ async def close_redis_connections(_app, _) -> None:
 @app.middleware("request")
 async def add_session_to_request(request: Request) -> None:
     """Set user value for templates."""
-    conn = await db.acquire(lazy=True)
-    request.ctx.connection = conn
+    request.ctx.connection = await db.acquire(lazy=True)
     request.ctx.user = request.ctx.session.get("user")
 
 
