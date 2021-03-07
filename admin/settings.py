@@ -62,3 +62,13 @@ CELERY_accept_content = ["application/json"]
 CELERY_task_serializer = "json"
 CELERY_result_serializer = "json"
 CELERY_timezone = "UTC"
+
+EMAIL_CONFIG = {
+    "host": "smtp.mailgun.org",
+    "port": 2525,
+    "host_user": get_env_var("EMAIL_HOST_USER"),
+    "host_password": get_env_var("EMAIL_HOST_PASSWORD"),
+    "server_name": "info.mkeda.me",
+    "email": "admin@info.mkeda.me",
+    "recipient": "mriynuk@gmail.com",
+}

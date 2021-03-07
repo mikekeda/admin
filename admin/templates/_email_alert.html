@@ -1,0 +1,64 @@
+<html>
+<head>
+<title>{{ title }}</title>
+<link rel="important stylesheet" href="chrome://messagebody/skin/messageBody.css">
+</head>
+<body>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{{ title }}</title>
+  </head>
+  <body itemscope itemtype="http://schema.org/EmailMessage"
+        style="background-color: #fafafa; font-family: Roboto, sans-serif;">
+    <div style="width: 600px; margin:0 auto;">
+      <table style="width: 100%; padding: 34px 0px; border-spacing: 0;">
+  <tr>
+    <td itemprop="potentialAction" itemscope itemtype="http://schema.org/ViewAction"
+        style="text-align: right; padding: 0; font-family: inherit;">
+      <a itemprop="target" href="https://admin.mkeda.me/sites/{{ site.title }}" style="font-weight: 500; text-decoration: none;">VIEW INCIDENT</a>
+      <meta itemprop="name" content="View alert" />
+      <meta itemprop="description" content="Navigate to the details page for this Monitoring alert." />
+    </td>
+  </tr>
+</table>
+<div style="background-color: white; border-top: 4px solid #d40001; border-left: 1px solid #eee; border-right: 1px solid #eee; border-radius: 6px 6px 0 0; height: 24px;"></div>
+<div style="background-color: white; border-left: 1px solid #eee; border-right: 1px solid #eee; padding: 0 24px; overflow: hidden;">
+  <table style="width: 100%; border-spacing: 0;">
+    <tr>
+      <td style="width: 35px; padding: 0;">
+        <img src="https://www.gstatic.com/stackdriver/notification/exclamation_mark.png" alt="exclamation mark" style="vertical-align: top;">
+  </td>
+      <td style="padding: 0; font-family: inherit;">
+        <span style="color: #d40001; font-size: 130%; font-weight: bold;">
+  Alert firing</span>
+</td>
+    </tr>
+  </table>
+  <div style="margin-left: 35px;">
+    <h1>{{ title }}</h1>
+
+  <p>An uptime check on {{ site.title }} is failing.</p>
+
+  <h2>Summary</h2>
+
+  <p><strong>Start time</strong><br>
+  {{ datetime }}</p>
+
+  <p><strong>Site</strong><br>
+  <a href="{{ site.url }}" style="text-decoration: none;">{{ site.title }}</a></p>
+
+    </div>
+  <div style="height: 54px;"></div>
+  <div style="text-align: center;">
+  <a href="https://admin.mkeda.me/sites/{{ site.title }}" style="display: inline-block; background-color: #4285f4; color: white; padding: 10px 18px; border-radius: 2px; text-decoration: none;">VIEW INCIDENT</a>
+
+  </div>
+</div>
+<div style="background-color: white; border-left: 1px solid #eee; border-right: 1px solid #eee; border-bottom: 1px solid #eee; height: 58px;"></div>
+</div>
+  </body>
+</html>
+</body>
+</html>
