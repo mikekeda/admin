@@ -17,7 +17,7 @@
   <body class="grey lighten-5">
     <nav class="blue-grey darken-4">
       <div class="nav-wrapper container">
-        <a id="logo-container" href="/" class="brand-logo">Admin</a>
+        <a href="/" id="logo-container" class="brand-logo hide-on-med-and-down">Admin</a>
         <ul class="right">
           <li class="{% if request.path == '/about' %}active{% endif %}">
             <a href="/about" class="{% if request.path == '/about' %}active{% else %}grey-text{% endif %}">About</a>
@@ -38,7 +38,7 @@
           </li>
           {% endif %}
         </ul>
-        <h1 class="center text-uppercase h2"><wbr>{% block page_title %}{% endblock %}</h1>
+        <h1 class="center text-uppercase h2 hide-on-small-only"><wbr>{% block page_title %}{% endblock %}</h1>
       </div>
     </nav>
 
