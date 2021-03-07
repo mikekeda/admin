@@ -86,7 +86,7 @@ async def homepage(request):
         repo.black_status = black_status
         repo.security_headers_grade = security_headers_grade
 
-    return html(jinja.render_string("sites.html", request, repos=repos))
+    return html(await jinja.render_string_async("sites.html", request, repos=repos))
 
 
 @app.route("/sites/<repo_name>")
@@ -154,7 +154,7 @@ async def repo_page(request, repo_name: str):
         requirements_statuses["requirements-dev.txt"] = requirements_dev_status
 
     return html(
-        jinja.render_string(
+        await jinja.render_string_async(
             "site.html",
             request,
             site=site,
@@ -208,7 +208,7 @@ async def logs_page(request, repo_name: str, file_name: str):
         logs = (await f.readlines())[-10000:]  # last 10000 lines
 
     return html(
-        jinja.render_string(
+        await jinja.render_string_async(
             "logs.html",
             request,
             logs="".join(logs),
@@ -247,7 +247,7 @@ async def metric(request):
     ]
 
     return html(
-        jinja.render_string(
+        await jinja.render_string_async(
             "metric.html", request, sites=sites, pings=pings, statuses=statuses
         )
     )
@@ -256,7 +256,7 @@ async def metric(request):
 @app.route("/about")
 async def about_page(request):
     """About page."""
-    return html(jinja.render_string("about.html", request))
+    return html(await jinja.render_string_async("about.html", request))
 
 
 @app.route("/logout")
