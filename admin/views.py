@@ -8,7 +8,6 @@ import aiofiles
 import git
 from aiohttp import ClientSession
 from sanic.exceptions import abort
-from sanic.response import html
 from sanic.response import json as sanic_json
 from sanic.response import redirect
 from sanic.views import HTTPMethodView
@@ -86,7 +85,7 @@ async def homepage(request):
         repo.black_status = black_status
         repo.security_headers_grade = security_headers_grade
 
-    return html(await jinja.render_string_async("sites.html", request, repos=repos))
+    return await jinja.render_async("sites.html", request, repos=repos)
 
 
 @app.route("/sites/<repo_name>")
@@ -153,19 +152,17 @@ async def repo_page(request, repo_name: str):
     if requirements_dev_status:
         requirements_statuses["requirements-dev.txt"] = requirements_dev_status
 
-    return html(
-        await jinja.render_string_async(
-            "site.html",
-            request,
-            site=site,
-            metrics=metrics,
-            site_status=site_status,
-            logs=logs,
-            sites=sites,
-            requirements_statuses=requirements_statuses,
-            is_black=is_black,
-            security_headers_grade=security_headers_grade,
-        )
+    return await jinja.render_async(
+        "site.html",
+        request,
+        site=site,
+        metrics=metrics,
+        site_status=site_status,
+        logs=logs,
+        sites=sites,
+        requirements_statuses=requirements_statuses,
+        is_black=is_black,
+        security_headers_grade=security_headers_grade,
     )
 
 
@@ -207,14 +204,12 @@ async def logs_page(request, repo_name: str, file_name: str):
     async with aiofiles.open(logs, "r") as f:
         logs = (await f.readlines())[-10000:]  # last 10000 lines
 
-    return html(
-        await jinja.render_string_async(
-            "logs.html",
-            request,
-            logs="".join(logs),
-            site_name=repo_name,
-            file_name=file_name,
-        )
+    return await jinja.render_async(
+        "logs.html",
+        request,
+        logs="".join(logs),
+        site_name=repo_name,
+        file_name=file_name,
     )
 
 
@@ -246,17 +241,15 @@ async def metric(request):
         for timestamp in status_dict
     ]
 
-    return html(
-        await jinja.render_string_async(
-            "metric.html", request, sites=sites, pings=pings, statuses=statuses
-        )
+    return await jinja.render_async(
+        "metric.html", request, sites=sites, pings=pings, statuses=statuses
     )
 
 
 @app.route("/about")
 async def about_page(request):
     """About page."""
-    return html(await jinja.render_string_async("about.html", request))
+    return await jinja.render_async("about.html", request)
 
 
 @app.route("/logout")
@@ -283,7 +276,7 @@ class LoginView(HTTPMethodView):
 
         form = LoginForm(request)
 
-        return jinja.render("login.html", request, form=form)
+        return await jinja.render_async("login.html", request, form=form)
 
     # noinspection PyMethodMayBeStatic
     async def post(self, request):
@@ -298,7 +291,7 @@ class LoginView(HTTPMethodView):
             else:
                 form.username.errors.append("Not valid username or password!")
 
-        return jinja.render("login.html", request, form=form)
+        return await jinja.render_async("login.html", request, form=form)
 
 
 app.add_route(LoginView.as_view(), "/login")
