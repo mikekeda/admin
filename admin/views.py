@@ -16,7 +16,7 @@ from sqlalchemy import and_
 from admin.app import app, jinja
 from admin.forms import LoginForm
 from admin.models import Metric, Repo, authenticate
-from admin.settings import LOGIN_REDIRECT_URL, get_env_var
+from admin.settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL, get_env_var
 from admin.utils import (
     api_authentication,
     check_black_status,
@@ -256,7 +256,7 @@ async def about_page(request):
 async def logout_page(request):
     """Logout page."""
     logout(request)
-    return redirect(LOGIN_REDIRECT_URL)
+    return redirect(LOGOUT_REDIRECT_URL)
 
 
 @app.route("/api", methods={"POST"})

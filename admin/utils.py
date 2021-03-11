@@ -16,7 +16,7 @@ from sanic_session.base import SessionDict
 
 from admin.app import session
 from admin.models import APIKey
-from admin.settings import API_KEY_HEADER, get_env_var
+from admin.settings import API_KEY_HEADER, LOGOUT_REDIRECT_URL, get_env_var
 
 
 def login_required():
@@ -29,7 +29,7 @@ def login_required():
                 return await f(request, *args, **kwargs)
 
             # User is not authorized.
-            return redirect("/login")
+            return redirect(LOGOUT_REDIRECT_URL)
 
         return decorated_function
 

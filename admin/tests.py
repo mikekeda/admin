@@ -47,11 +47,56 @@ def test_home_page(setup):
     assert response.headers["Location"] == "/login"
     assert request.ctx.session.get("user") is None
 
+    # Login.
+    credentials = {"username": test_username, "password": test_password}
+    request, response = app.test_client.post(
+        "/login", data=credentials, allow_redirects=False
+    )
+    session_cookie = response.cookies["session"]
+
+    # Check as logged user.
+    request, response = app.test_client.get("/", cookies={"session": session_cookie})
+    assert response.status == 200
+
+
+def test_metrics_page(setup):
+    # Anonymous user - redirect to login page.
+    request, response = app.test_client.get("/metrics", allow_redirects=False)
+    assert response.status == 302
+    assert response.headers["Location"] == "/login"
+    assert request.ctx.session.get("user") is None
+
+    # Login.
+    credentials = {"username": test_username, "password": test_password}
+    request, response = app.test_client.post(
+        "/login", data=credentials, allow_redirects=False
+    )
+    session_cookie = response.cookies["session"]
+
+    # Check as logged user.
+    request, response = app.test_client.get(
+        "/metrics", cookies={"session": session_cookie}
+    )
+    assert response.status == 200
+
 
 def test_login_page(setup):
     # Anonymous user - redirect to login page.
     _, response = app.test_client.get("/login")
     assert response.status == 200
+
+    # Login with invalid credentials.
+    for username, password in (
+        ("wrong", "wrong"),
+        (test_username, "wrong"),
+        ("wrong", test_password),
+    ):
+        credentials = {"username": username, "password": password}
+        request, response = app.test_client.post(
+            "/login", data=credentials, allow_redirects=False
+        )
+        assert response.status == 200
+        assert request.ctx.session.get("user") is None
 
     # Login test user.
     credentials = {"username": test_username, "password": test_password}
@@ -60,6 +105,22 @@ def test_login_page(setup):
     )
     assert response.status == 302
     assert request.ctx.session.get("user", {}).get("username") == test_username
+
+    session_cookie = response.cookies["session"]
+
+    # Try to open login page again.
+    _, response = app.test_client.get(
+        "/login", allow_redirects=False, cookies={"session": session_cookie}
+    )
+    assert response.status == 302
+    assert response.headers["Location"] == "/"
+    assert request.ctx.session.get("user") is not None
+
+    # Logout.
+    request, response = app.test_client.get("/logout", allow_redirects=False)
+    assert response.status == 302
+    assert response.headers["Location"] == "/login"
+    assert request.ctx.session.get("user") is None
 
 
 def test_about_page(setup):

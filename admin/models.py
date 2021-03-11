@@ -20,7 +20,7 @@ def hash_password(value: str) -> str:
 
 async def authenticate(username: str, password: str) -> Optional[User]:
     """If the given credentials are valid, return a User object."""
-    user = await User.query.gino.first(username=username)
+    user = await User.query.where(User.username == username).gino.first()
     if user and user.password == hash_password(password):
         return user
 
