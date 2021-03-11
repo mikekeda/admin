@@ -10,7 +10,7 @@ from admin.views import app
 from admin.settings import get_env_var
 
 test_username = "test_user_1"
-test_password = "qwerty"
+test_password = os.urandom(16).hex()
 app.config["WTF_CSRF_ENABLED"] = False
 DB_URL = "asyncpg://{}:{}@{}:5432/{}".format(
     get_env_var("DB_USER", "admin_admin"),
