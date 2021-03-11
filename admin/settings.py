@@ -8,15 +8,14 @@ SITE_ENV_PREFIX = "ADMIN"
 def get_env_var(name: str, default: str = "") -> str:
     """Get all sensitive data from google vm custom metadata."""
     try:
-        name = "_".join([SITE_ENV_PREFIX, name])
+        name = f"{SITE_ENV_PREFIX}_{name}"
         res = os.environ.get(name)
         if res is not None:
             # Check env variable (Jenkins build).
             return res
         else:
             res = requests.get(
-                "http://metadata.google.internal/computeMetadata/"
-                "v1/instance/attributes/{}".format(name),
+                f"http://metadata.google.internal/computeMetadata/v1/instance/attributes/{name}",
                 headers={"Metadata-Flavor": "Google"},
             )
             if res.status_code == 200:
