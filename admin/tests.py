@@ -20,6 +20,27 @@ DB_URL = "asyncpg://{}:{}@{}:5432/{}".format(
 )
 
 
+def _test_page(url: str) -> None:
+    """Test given page that should be not accessible for anonymous."""
+
+    # Anonymous user - redirect to login page.
+    request, response = app.test_client.get(url, allow_redirects=False)
+    assert response.status == 302
+    assert response.headers["Location"] == "/login"
+    assert request.ctx.session.get("user") is None
+
+    # Login.
+    credentials = {"username": test_username, "password": test_password}
+    request, response = app.test_client.post(
+        "/login", data=credentials, allow_redirects=False
+    )
+    session_cookie = response.cookies["session"]
+
+    # Check as logged user.
+    request, response = app.test_client.get(url, cookies={"session": session_cookie})
+    assert response.status == 200
+
+
 @pytest.fixture
 async def setup():
     """Create test databases and tables for tests and drop them after."""
@@ -42,42 +63,11 @@ async def setup():
 
 def test_home_page(setup):
     # Anonymous user - redirect to login page.
-    request, response = app.test_client.get("/", allow_redirects=False)
-    assert response.status == 302
-    assert response.headers["Location"] == "/login"
-    assert request.ctx.session.get("user") is None
-
-    # Login.
-    credentials = {"username": test_username, "password": test_password}
-    request, response = app.test_client.post(
-        "/login", data=credentials, allow_redirects=False
-    )
-    session_cookie = response.cookies["session"]
-
-    # Check as logged user.
-    request, response = app.test_client.get("/", cookies={"session": session_cookie})
-    assert response.status == 200
+    _test_page("/")
 
 
 def test_metrics_page(setup):
-    # Anonymous user - redirect to login page.
-    request, response = app.test_client.get("/metrics", allow_redirects=False)
-    assert response.status == 302
-    assert response.headers["Location"] == "/login"
-    assert request.ctx.session.get("user") is None
-
-    # Login.
-    credentials = {"username": test_username, "password": test_password}
-    request, response = app.test_client.post(
-        "/login", data=credentials, allow_redirects=False
-    )
-    session_cookie = response.cookies["session"]
-
-    # Check as logged user.
-    request, response = app.test_client.get(
-        "/metrics", cookies={"session": session_cookie}
-    )
-    assert response.status == 200
+    _test_page("/metrics")
 
 
 def test_login_page(setup):
