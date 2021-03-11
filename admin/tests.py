@@ -65,3 +65,8 @@ def test_login_page(setup):
 def test_about_page(setup):
     _, response = app.test_client.get("/about")
     assert response.status == 200
+
+
+def test_404_page(setup):
+    _, response = app.test_client.get("/this-page-doesnt-exist")
+    assert response.status == 404

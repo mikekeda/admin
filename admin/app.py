@@ -103,7 +103,7 @@ async def exception_handler(
     if status_code == 500:
         logger.exception(exception)
 
-    return jinja.render(
+    return await jinja.render_async(
         "error.html",
         request,
         status=status_code,
