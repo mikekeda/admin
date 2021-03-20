@@ -253,23 +253,21 @@ async def logs(request):
     """Show Nginx access.log"""
     access_logs = []
 
-    columns = [
-        "Time",
-        "ip",
-        "Method",
-        "url",
-        "Status",
-        "Protocol",
-        "Size",
-        "Referer",
-        "user_agent",
-        "f",
-        "u",
-    ]
+    known_user_agents = {
+        "GoogleStackdriverMonitoring-UptimeChecks(https://cloud.google.com/monitoring)",
+    }
+
+    known_ips = {
+        "34.67.198.186",
+    }
 
     async with aiofiles.open(get_env_var("ACCESS_LOG"), "r") as f:
         async for line in f:
             line = json.loads(line)
+
+            if line[1] in known_ips or line[8] in known_user_agents:
+                continue  # skip this
+
             line[0] = datetime.strptime(line[0], "%d/%b/%Y:%H:%M:%S %z").isoformat()
             line[1] = (
                 '<a target="_blank" rel="nofollow" href="https://www.abuseipdb.com/check/'
@@ -282,7 +280,6 @@ async def logs(request):
         "access_log.html",
         request,
         logs=access_logs,
-        columns=columns,
     )
 
 
