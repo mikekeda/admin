@@ -22,7 +22,7 @@
                 {% for line in logs %}
                     <tr>
                         {% for cell in line %}
-                            <td>{{ cell }}</td>
+                            <td>{{ cell|safe }}</td>
                         {% endfor %}
                     </tr>
                 {% endfor %}
