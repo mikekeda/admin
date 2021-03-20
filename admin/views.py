@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import re
 from collections import defaultdict
@@ -243,6 +244,41 @@ async def metric(request):
 
     return await jinja.render_async(
         "metric.html", request, sites=sites, pings=pings, statuses=statuses
+    )
+
+
+@app.route("/logs")
+@login_required()
+async def logs(request):
+    """Show Nginx access.log"""
+    access_logs = []
+
+    columns = [
+        "Time",
+        "ip",
+        "Method",
+        "url",
+        "Status",
+        "Protocol",
+        "Size",
+        "Referer",
+        "user_agent",
+        "forwarded_for",
+        "user",
+    ]
+
+    async with aiofiles.open(get_env_var("ACCESS_LOG"), "r") as f:
+        async for line in f:
+            line = json.loads(line)
+            line[0] = datetime.strptime(line[0], "%d/%b/%Y:%H:%M:%S %z").isoformat()
+
+            access_logs.append(line)
+
+    return await jinja.render_async(
+        "access_log.html",
+        request,
+        logs=access_logs,
+        columns=columns,
     )
 
 

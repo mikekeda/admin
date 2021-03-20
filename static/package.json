@@ -2,6 +2,7 @@
   "name": "admin-static",
   "version": "0.0.1",
   "dependencies": {
+    "datatables": "^1.10.18",
     "hammerjs": "2.0.8",
     "jquery": "^3.6.0",
     "materialize-css": "^1.0.0"

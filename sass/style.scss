@@ -76,3 +76,15 @@ body > .container {
     }
   }
 }
+
+#logs_wrapper {
+  overflow: hidden;
+}
+
+table#logs {
+  font-size: 0.9rem;
+
+  td {
+    padding: 5px;
+  }
+}

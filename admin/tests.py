@@ -70,6 +70,10 @@ def test_metrics_page(setup):
     _test_page("/metrics")
 
 
+def test_logs_page(setup):
+    _test_page("/logs")
+
+
 def test_login_page(setup):
     # Anonymous user - redirect to login page.
     _, response = app.test_client.get("/login")

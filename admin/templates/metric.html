@@ -4,22 +4,14 @@
 {% block page_title %}Metrics{% endblock %}
 
 {% block body %}
-<nav>
-    <div class="nav-wrapper">
-        <div class="container">
-            <a href="/" class="breadcrumb">Sites</a>
-            <a href="/metrics" class="breadcrumb">Metrics</a>
-        </div>
-    </div>
-</nav>
-
 <div class="container my-5">
-    <script src="https://www.gstatic.com/charts/loader.js"></script>
-
     <div id="ping_div"></div>
     <div id="status_div"></div>
 </div>
+{% endblock %}
 
+{% block script %}
+<script src="https://www.gstatic.com/charts/loader.js"></script>
 <script>
     google.charts.load('current', {'packages':['corechart']});
     google.charts.setOnLoadCallback(drawCharts);

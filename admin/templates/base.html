@@ -5,6 +5,7 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!--Import materialize.css-->
     <link type="text/css" rel="stylesheet" href="/static/node_modules/materialize-css/dist/css/materialize.min.css"/>
+    {% block css %}{% endblock %}
     <link type="text/css" rel="stylesheet" href="/static/css/style.css"/>
 
     <!--Let browser know website is optimized for mobile-->
@@ -25,6 +26,9 @@
           {% if request.ctx.user %}
           <li class="{% if request.path == '/metrics' %}active{% endif %}">
             <a href="/metrics" class="{% if request.path == '/metrics' %}active{% else %}grey-text{% endif %}">Metrics</a>
+          </li>
+          <li class="{% if request.path == '/logs' %}active{% endif %}">
+            <a href="/logs" class="{% if request.path == '/logs' %}active{% else %}grey-text{% endif %}">Logs</a>
           </li>
           <li class="{% if request.path == '/user' %}active{% endif %}">
             <a href="/user" class="{% if request.path == '/user' %}active{% else %}grey-text{% endif %}">{{ get_item(request.ctx.user, 'username') }}</a>
@@ -55,6 +59,7 @@
     <!--Import jQuery before materialize.js-->
     <script src="/static/node_modules/jquery/dist/jquery.min.js"></script>
     <script src="/static/node_modules/materialize-css/dist/js/materialize.min.js"></script>
+    {% block script %}{% endblock %}
     <script src="/static/js/main.js"></script>
   </body>
 </html>

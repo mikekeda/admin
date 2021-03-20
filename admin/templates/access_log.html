@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ file_name }}{% endblock %}
+{% block page_title %}{{ file_name }}{% endblock %}
+
+{% block css %}
+    <link type="text/css" rel="stylesheet" href="/static/node_modules/datatables/media/css/jquery.dataTables.min.css"  media="screen,projection"/>
+{% endblock %}
+
+{% block body %}
+    <div>
+        <table class="table-list white bordered row-border" id="logs">
+            <thead class="grey darken-2">
+                <tr>
+                    {% for col in columns %}
+                        <th class="no-br-radius white-text">{{ col }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for line in logs %}
+                    <tr>
+                        {% for cell in line %}
+                            <td>{{ cell }}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script src="/static/node_modules/datatables/media/js/jquery.dataTables.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            $('#logs').DataTable({
+                "pageLength": 200,
+                "order": [[0, "desc"]]
+            });
+        });
+    </script>
+{% endblock %}
