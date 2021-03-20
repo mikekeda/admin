@@ -259,6 +259,7 @@ async def logs(request):
 
     known_ips = {
         "34.67.198.186",
+        request.ip,
     }
 
     async with aiofiles.open(

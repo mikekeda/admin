@@ -87,7 +87,9 @@ table#logs {
   td {
     padding: 5px;
 
-    &:nth-child(4) {
+    &:nth-child(4),
+    &:nth-child(8),
+    &:nth-child(10) {
       max-width: 200px;
       overflow-wrap: break-word;
     }
