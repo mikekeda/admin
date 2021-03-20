@@ -259,7 +259,8 @@ async def logs(request):
 
     known_ips = {
         "34.67.198.186",
-        request.ip,
+        "167.172.196.35",
+        request.headers.get("x-forwarded-for").split(",")[0],
     }
 
     async with aiofiles.open(
