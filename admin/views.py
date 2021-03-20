@@ -261,7 +261,9 @@ async def logs(request):
         "34.67.198.186",
     }
 
-    async with aiofiles.open(get_env_var("ACCESS_LOG"), "r") as f:
+    async with aiofiles.open(
+        get_env_var("ACCESS_LOG"), "r", encoding="ISO-8859-1"
+    ) as f:
         async for line in f:
             line = json.loads(line)
 
