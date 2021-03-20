@@ -263,8 +263,8 @@ async def logs(request):
         "Size",
         "Referer",
         "user_agent",
-        "forwarded_for",
-        "user",
+        "f",
+        "u",
     ]
 
     async with aiofiles.open(get_env_var("ACCESS_LOG"), "r") as f:
