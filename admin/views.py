@@ -262,6 +262,8 @@ async def logs(request):
         (request.headers.get("x-forwarded-for") or "").split(",")[0],
     }
 
+    known_referees = set((get_env_var("KNOWN_REFEREES") or "").split(","))
+
     async with aiofiles.open(
         get_env_var("ACCESS_LOG"), "r", encoding="ISO-8859-1"
     ) as f:
@@ -273,8 +275,8 @@ async def logs(request):
                 and any(
                     (
                         line[1] in known_ips,
+                        line[7] in known_referees,
                         line[8] in known_user_agents,
-                        line[7] in set(get_env_var("ADMIN_KNOWN_REFEREES").split(",")),
                     )
                 )
             ):
