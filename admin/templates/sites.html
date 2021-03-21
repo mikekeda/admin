@@ -54,7 +54,7 @@
         </td>
         <td>
           {% if repo.security_headers_grade %}
-            <a href="https://securityheaders.com/?followRedirects=on&q={{ repo.url }}" target="_blank" rel="nofollow">
+            <a href="https://securityheaders.com/?hide=on&q={{ repo.url }}" target="_blank" rel="nofollow">
               {{ repo.security_headers_grade }}
             </a>
           {% endif %}

@@ -119,7 +119,7 @@ async def check_security_headers(repo, _session: ClientSession) -> str:
     if not repo.url:
         return ""
 
-    url = f"https://securityheaders.io/?hide=on&followRedirects=on&q={repo.url}"
+    url = f"https://securityheaders.com/?hide=on&q={repo.url}"
     async with _session.get(url) as resp:
         return resp.headers.get("X-Grade", "")
 
