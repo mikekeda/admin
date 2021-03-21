@@ -55,13 +55,13 @@ async def init_cache(_app: Sanic, loop: AbstractEventLoop) -> None:
         **_app.config.setdefault("DB_KWARGS", {}),
     )
 
-    _app.redis = await aioredis.create_redis_pool(_app.config["redis"])
+    _app.ctx.redis = await aioredis.create_redis_pool(_app.config["redis"])
 
     # Pass the getter method for the connection pool into the session.
     session.init_app(
         _app,
         interface=AIORedisSessionInterface(
-            _app.redis,
+            _app.ctx.redis,
             samesite="Strict",
             secure=not _app.config["DEBUG"],
             cookie_name="session" if _app.config["DEBUG"] else "__Host-session",
@@ -75,8 +75,8 @@ async def init_cache(_app: Sanic, loop: AbstractEventLoop) -> None:
 async def close_redis_connections(_app, _) -> None:
     """Close db and redis connections."""
     await db.pop_bind().close()
-    _app.redis.close()
-    await _app.redis.wait_closed()
+    _app.ctx.redis.close()
+    await _app.ctx.redis.wait_closed()
 
 
 @app.middleware("request")
