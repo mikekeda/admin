@@ -268,7 +268,17 @@ async def logs(request):
         async for line in f:
             line = json.loads(line)
 
-            if line[1] in known_ips or line[8] in known_user_agents:
+            if (
+                line[1] == "GET"
+                and line[4] == "200"
+                and any(
+                    (
+                        line[1] in known_ips,
+                        line[8] in known_user_agents,
+                        line[8] in set(get_env_var("ADMIN_KNOWN_REFEREES").split(",")),
+                    )
+                )
+            ):
                 continue  # skip this
 
             line[0] = datetime.strptime(line[0], "%d/%b/%Y:%H:%M:%S %z").isoformat()
