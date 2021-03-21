@@ -27,24 +27,24 @@
     <script src="https://www.gstatic.com/charts/loader.js"></script>
 
     <p>
-        <a href="https://requires.io/github/mikekeda/{{ site.name }}/requirements/?branch=master" target="_blank" rel="nofollow">
+        <a href="https://requires.io/github/mikekeda/{{ site.name }}/requirements/?branch=master" target="_blank" rel="noopener">
             <img src="https://requires.io/github/mikekeda/{{ site.name }}/requirements.svg?branch=master" alt="Requirements Status">
         </a>
-        <a href="https://app.codacy.com/gh/mikekeda/{{ site.name }}/dashboard" target="_blank" rel="nofollow">
+        <a href="https://app.codacy.com/gh/mikekeda/{{ site.name }}/dashboard" target="_blank" rel="noopener">
             <img src="{{ site.codacy }}" alt="Codacy Badge">
         </a>
         {% if site.coverage %}
-        <a href="https://app.codacy.com/gh/mikekeda/{{ site.name }}/dashboard" target="_blank" rel="nofollow">
+        <a href="https://app.codacy.com/gh/mikekeda/{{ site.name }}/dashboard" target="_blank" rel="noopener">
             <img src="{{ site.coverage }}" alt="Coverage Badge">
         </a>
         {% endif %}
         {% if is_black %}
-        <a href="https://github.com/mikekeda/{{ site.name }}" target="_blank" rel="nofollow">
+        <a href="https://github.com/mikekeda/{{ site.name }}" target="_blank" rel="noopener">
             <img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Black Badge">
         </a>
         {% endif %}
         {% if security_headers_grade %}
-        <a href="https://securityheaders.com/?hide=on&q={{ site.url }}" target="_blank" rel="nofollow">
+        <a href="https://securityheaders.com/?hide=on&q={{ site.url }}" target="_blank" rel="noopener">
             {{ security_headers_grade }}
         </a>
         {% endif %}
@@ -55,7 +55,7 @@
         </a>
         {% endfor %}
 
-        <a href="https://github.com/mikekeda/{{ site.name }}" class="right" target="_blank" rel="nofollow">
+        <a href="https://github.com/mikekeda/{{ site.name }}" class="right" target="_blank" rel="noopener">
             github
         </a>
     </p>
@@ -85,7 +85,7 @@
             {% for package, current, latest in requirements_status %}
             <tr>
                 <td>
-                    <a href="https://pypi.org/project/{{ package }}/" target="_blank" rel="nofollow">
+                    <a href="https://pypi.org/project/{{ package }}/" target="_blank" rel="noopener">
                         {{ package }}
                     </a>
                 </td>

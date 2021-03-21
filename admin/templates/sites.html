@@ -20,7 +20,7 @@
       {% for repo in repos %}
       <tr>
         <td data-order="{% if repo.status %}0{% else %}1{% endif %}">
-          <a href="{{ repo.url }}" target="_blank" rel="nofollow">
+          <a href="{{ repo.url }}" target="_blank" rel="noopener">
             <div class="status-dot {% if repo.status %}green{% else %}red{% endif %}"></div>
           </a>
         </td>
@@ -35,26 +35,26 @@
           {% endfor %}
         </td>
         <td>
-          <a href="https://requires.io/github/mikekeda/{{ repo.name }}/requirements/?branch=master" target="_blank" rel="nofollow">
+          <a href="https://requires.io/github/mikekeda/{{ repo.name }}/requirements/?branch=master" target="_blank" rel="noopener">
             <img src="https://requires.io/github/mikekeda/{{ repo.name }}/requirements.svg?branch=master" alt="Requirements Status" loading="lazy">
           </a>
-          <a href="https://app.codacy.com/gh/mikekeda/{{ repo.name }}/dashboard" target="_blank" rel="nofollow">
+          <a href="https://app.codacy.com/gh/mikekeda/{{ repo.name }}/dashboard" target="_blank" rel="noopener">
             <img src="{{ repo.codacy }}" alt="Codacy Badge" loading="lazy">
           </a>
           {% if repo.coverage %}
-          <a href="https://app.codacy.com/gh/mikekeda/{{ repo.name }}/dashboard" target="_blank" rel="nofollow">
+          <a href="https://app.codacy.com/gh/mikekeda/{{ repo.name }}/dashboard" target="_blank" rel="noopener">
             <img src="{{ repo.coverage }}" alt="Coverage Badge" loading="lazy">
           </a>
           {% endif %}
           {% if repo.black_status %}
-          <a href="https://github.com/mikekeda/{{ repo.name }}" target="_blank" rel="nofollow">
+          <a href="https://github.com/mikekeda/{{ repo.name }}" target="_blank" rel="noopener">
             <img src="https://img.shields.io/badge/code%20style-black-000000.svg" loading="lazy" alt="Black Badge">
           </a>
           {% endif %}
         </td>
         <td>
           {% if repo.security_headers_grade %}
-            <a href="https://securityheaders.com/?hide=on&q={{ repo.url }}" target="_blank" rel="nofollow">
+            <a href="https://securityheaders.com/?hide=on&q={{ repo.url }}" target="_blank" rel="noopener">
               {{ repo.security_headers_grade }}
             </a>
           {% endif %}
