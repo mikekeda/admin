@@ -267,15 +267,14 @@ async def logs(request):
     ) as f:
         async for line in f:
             line = json.loads(line)
-
             if (
-                line[1] == "GET"
+                line[2] == "GET"
                 and line[4] == "200"
                 and any(
                     (
                         line[1] in known_ips,
                         line[8] in known_user_agents,
-                        line[8] in set(get_env_var("ADMIN_KNOWN_REFEREES").split(",")),
+                        line[7] in set(get_env_var("ADMIN_KNOWN_REFEREES").split(",")),
                     )
                 )
             ):
