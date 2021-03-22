@@ -12,7 +12,7 @@ from sanic_jinja2 import SanicJinja2
 from sanic_session import AIORedisSessionInterface, Session
 from sqlalchemy.engine.url import URL
 
-from admin.settings import REDIS_CACHE_CONFIG, SANIC_CONFIG
+from admin.settings import DEBUG, REDIS_CACHE_CONFIG, SANIC_CONFIG
 from admin.template_tags import get_item
 
 app = Sanic(__name__)
@@ -25,7 +25,12 @@ db = Gino()
 app.jinja_env = namedtuple("JinjaEnv", ["globals"])({})
 
 jinja = SanicJinja2(app, autoescape=True, enable_async=True)
-app.jinja_env.globals.update(get_item=get_item)
+app.jinja_env.globals.update(
+    get_item=get_item,
+    STATIC_URL="/static/"
+    if DEBUG
+    else "https://storage.googleapis.com/cdn.mkeda.me/admin/",
+)
 
 session = Session()
 
