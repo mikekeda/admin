@@ -282,11 +282,7 @@ async def logs(request):
             ):
                 continue  # skip this
 
-            line[0] = datetime.strptime(line[0], "%d/%b/%Y:%H:%M:%S %z").isoformat()
-            line[1] = (
-                '<a target="_blank" rel="noopener noreferrer" '
-                f'href="https://www.abuseipdb.com/check/{line[1]}">{line[1]}</a>'
-            )
+            line[0] = datetime.strptime(line[0], "%d/%b/%Y:%H:%M:%S %z")
 
             access_logs.append(line)
 

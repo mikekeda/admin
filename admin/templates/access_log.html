@@ -30,7 +30,11 @@
                 {% for line in logs %}
                     <tr>
                         {% for cell in line %}
-                            <td>{{ cell|safe }}</td>
+                            {% if loop.index0 == 1 %}
+                                <td><a target="_blank" rel="noopener noreferrer" href="https://www.abuseipdb.com/check/{{ cell }}">{{ cell }}</a></td>
+                            {% else %}
+                                <td>{{ cell }}</td>
+                            {% endif %}
                         {% endfor %}
                     </tr>
                 {% endfor %}
