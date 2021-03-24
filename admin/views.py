@@ -92,6 +92,7 @@ async def homepage(request):
 @app.route("/sites/<repo_name>")
 @login_required()
 async def repo_page(request, repo_name: str):
+    repo_name = repo_name.replace("%20", " ")
     site = await Repo.query.where(Repo.title == repo_name).gino.first()
     if not site:
         abort(404)
