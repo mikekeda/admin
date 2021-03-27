@@ -31,7 +31,11 @@
                     <tr>
                         {% for cell in line %}
                             {% if loop.index0 == 1 %}
-                                <td><a target="_blank" rel="noopener noreferrer" href="https://www.abuseipdb.com/check/{{ cell }}">{{ cell }}</a></td>
+                                <td>
+                                    <a target="_blank" rel="noopener noreferrer" class="{% if cell in known_ips %}green-text text-darken-3{% endif %}" href="https://www.abuseipdb.com/check/{{ cell }}">
+                                        {{ cell }}
+                                    </a>
+                                </td>
                             {% else %}
                                 <td>{{ cell }}</td>
                             {% endif %}

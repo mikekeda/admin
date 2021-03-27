@@ -172,9 +172,9 @@ async def repo_page(request, repo_name: str):
 @login_required()
 async def update_requirements_txt(_, repo_name: str):
     """Update requirements.txt"""
-    repo_name = repo_name.replace("%20", " ")
     folder_name = get_env_var("REPO_PREFIX") + (
-        repo_name.lower()
+        repo_name.replace("%20", " ")
+        .lower()
         .replace("-", "_")
         .replace(" ", "_")
         .replace("/", "")
@@ -292,6 +292,7 @@ async def logs(request):
         "access_log.html",
         request,
         logs=access_logs,
+        known_ips=known_ips,
     )
 
 
