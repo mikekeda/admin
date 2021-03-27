@@ -31,11 +31,15 @@
                     <tr>
                         {% for cell in line %}
                             {% if loop.index0 == 1 %}
-                                <td>
-                                    <a target="_blank" rel="noopener noreferrer" class="{% if cell in known_ips %}green-text text-darken-3{% endif %}" href="https://www.abuseipdb.com/check/{{ cell }}">
+                                <td class="{% if cell in known_ips %}green lighten-4{% endif %}">
+                                    <a target="_blank" rel="noopener noreferrer" href="https://www.abuseipdb.com/check/{{ cell }}">
                                         {{ cell }}
                                     </a>
                                 </td>
+                            {% elif loop.index0 == 3 %}
+                                <td class="{% if cell.endswith('.php') %}red lighten-4{% endif %}">{{ cell }}</td>
+                            {% elif loop.index0 == 4 %}
+                                <td class="lighten-4 {% if cell < 400 %}green{% elif cell < 500 %}yellow{% else %}red{% endif %}">{{ cell }}</td>
                             {% else %}
                                 <td>{{ cell }}</td>
                             {% endif %}

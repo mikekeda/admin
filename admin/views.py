@@ -285,6 +285,7 @@ async def logs(request):
                 continue  # skip this
 
             line[0] = datetime.strptime(line[0], "%d/%b/%Y:%H:%M:%S %z")
+            line[4] = int(line[4])
 
             access_logs.append(line)
 
