@@ -30,9 +30,6 @@
           <li class="{% if request.path == '/logs' %}active{% endif %}">
             <a href="/logs" class="{% if request.path == '/logs' %}active{% else %}grey-text{% endif %}">Logs</a>
           </li>
-          <li class="{% if request.path == '/user' %}active{% endif %}">
-            <a href="/user" class="{% if request.path == '/user' %}active{% else %}grey-text{% endif %}">{{ get_item(request.ctx.user, 'username') }}</a>
-          </li>
           <li class="{% if request.path == '/logout' %}active{% endif %}">
             <a href="/logout" class="{% if request.path == '/logout' %}active{% else %}grey-text{% endif %}">Logout</a>
           </li>
