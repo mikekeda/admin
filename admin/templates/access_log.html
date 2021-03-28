@@ -37,9 +37,11 @@
                                     </a>
                                 </td>
                             {% elif loop.index0 == 3 %}
-                                <td class="{% if cell.endswith('.php') %}red lighten-4{% endif %}">{{ cell }}</td>
+                                <td class="lighten-4 {% if cell.endswith('.php') or 'mkeda.me' not in cell %}red{% endif %}">{{ cell }}</td>
                             {% elif loop.index0 == 4 %}
                                 <td class="lighten-4 {% if cell < 400 %}green{% elif cell < 500 %}yellow{% else %}red{% endif %}">{{ cell }}</td>
+                            {% elif loop.index0 == 8 %}
+                                <td class="lighten-4 {% if any_in(bad_user_agents, cell) or not cell %}red{% endif %}">{{ cell }}</td>
                             {% else %}
                                 <td>{{ cell }}</td>
                             {% endif %}

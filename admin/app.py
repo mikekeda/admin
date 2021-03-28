@@ -13,7 +13,7 @@ from sanic_session import AIORedisSessionInterface, Session
 from sqlalchemy.engine.url import URL
 
 from admin.settings import DEBUG, REDIS_CACHE_CONFIG, SANIC_CONFIG
-from admin.template_tags import get_item
+from admin.template_tags import get_item, any_in
 
 app = Sanic(__name__)
 app.config.update(SANIC_CONFIG)
@@ -26,6 +26,7 @@ app.jinja_env = namedtuple("JinjaEnv", ["globals"])({})
 
 jinja = SanicJinja2(app, autoescape=True, enable_async=True)
 app.jinja_env.globals.update(
+    any_in=any_in,
     get_item=get_item,
     STATIC_URL="/static/"
     if DEBUG

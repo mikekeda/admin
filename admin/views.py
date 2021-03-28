@@ -294,6 +294,7 @@ async def logs(request):
         request,
         logs=access_logs,
         known_ips=known_ips,
+        bad_user_agents={"msnbot", "scrapbot", "Go-http-client"},
     )
 
 
