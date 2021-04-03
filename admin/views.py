@@ -220,7 +220,9 @@ async def logs_page(request, repo_name: str, file_name: str):
 @login_required()
 async def metric(request):
     ex = request.ctx.conn.execute
-    sites = await ex(select(Repo).order_by(Repo.id).where(Repo.url.isnot(None)))
+    sites = (
+        await ex(select(Repo).order_by(Repo.id).where(Repo.url.isnot(None)))
+    ).fetchall()
     site_ids = [s.id for s in sites]
 
     ping_dict = defaultdict(lambda: defaultdict(int))
