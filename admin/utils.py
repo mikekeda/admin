@@ -8,15 +8,15 @@ from typing import Iterator, Optional, Iterable
 
 import aiofiles
 from aiohttp import ClientConnectorError, ClientSession
+from sqlalchemy.engine import Row
 from sanic.exceptions import abort
 from sanic.log import logger
-from sanic.response import json as sanic_json
+from sanic.request import Request
 from sanic.response import redirect
 from sanic_session.base import SessionDict
 
 from admin.app import session
-from admin.models import APIKey
-from admin.settings import API_KEY_HEADER, LOGOUT_REDIRECT_URL, get_env_var
+from admin.settings import LOGOUT_REDIRECT_URL, get_env_var
 
 
 def login_required():
@@ -24,7 +24,7 @@ def login_required():
 
     def decorator(f):
         @wraps(f)
-        async def decorated_function(request, *args, **kwargs):
+        async def decorated_function(request: Request, *args, **kwargs):
             if request.ctx.session.get("user"):
                 return await f(request, *args, **kwargs)
 
@@ -36,28 +36,7 @@ def login_required():
     return decorator
 
 
-def api_authentication():
-    """Api authentication decorator."""
-
-    def decorator(f):
-        @wraps(f)
-        async def decorated_function(request, *args, **kwargs):
-            token = request.headers.get(API_KEY_HEADER)
-            user = await APIKey.authenticate(token)
-
-            if user:
-                await login(request, user)
-                return await f(request, *args, **kwargs)
-
-            # User is not authorized.
-            return sanic_json({"status": "not_authorized"}, 403)
-
-        return decorated_function
-
-    return decorator
-
-
-async def login(request, user) -> None:
+async def login(request: Request, user: Row) -> None:
     """Store user id and username in the session."""
     request.ctx.session["user"] = {"id": user.id, "username": user.username}
 
@@ -67,10 +46,14 @@ async def login(request, user) -> None:
     await session.interface._delete_key(old_sid)  # delete old record from datastore
 
 
-def logout(request) -> None:
+def logout(request: Request) -> None:
     """Remove user id and username from the session."""
     request.ctx.session = SessionDict(sid=request.ctx.session.sid)  # clear session
     request.ctx.session.modified = True  # mark as modified to update sid in cookies
+
+
+def get_process_name(repo: Row) -> str:
+    return repo.title.lower().replace("-", "_").replace(" ", "_")
 
 
 async def get_site_status(url: str, _session: ClientSession) -> Optional[int]:
@@ -101,9 +84,9 @@ async def check_supervisor_status(process: str) -> str:
     return stdout.decode().strip()
 
 
-async def check_black_status(repo) -> bool:
+async def check_black_status(repo: Row) -> bool:
     """Check if code is black."""
-    folder = get_env_var("REPO_PREFIX") + repo.process_name
+    folder = get_env_var("REPO_PREFIX") + get_process_name(repo)
     proc = await asyncio.create_subprocess_shell(
         f'cd {folder} && black --check . --exclude "(migrations|alembic)"',
         stdout=asyncio.subprocess.PIPE,
@@ -114,7 +97,7 @@ async def check_black_status(repo) -> bool:
     return "All done!" in stderr.decode()
 
 
-async def check_security_headers(repo, _session: ClientSession) -> str:
+async def check_security_headers(repo: Row, _session: ClientSession) -> str:
     """Return security headers grade."""
     if not repo.url:
         return ""
@@ -124,15 +107,17 @@ async def check_security_headers(repo, _session: ClientSession) -> str:
         return resp.headers.get("X-Grade", "")
 
 
-def get_log_files(repo, process_statuses: dict[str, str]) -> Iterator[tuple[str, str]]:
+def get_log_files(
+    repo: Row, process_statuses: dict[str, str]
+) -> Iterator[tuple[str, str]]:
     """Return log file name with corresponding supervisor status."""
     if len(repo.processes) >= 1:
-        yield "error.log", process_statuses[repo.process_name]
-        yield "out.log", process_statuses[repo.process_name]
+        yield "error.log", process_statuses[get_process_name(repo)]
+        yield "out.log", process_statuses[get_process_name(repo)]
     if len(repo.processes) >= 2:
-        yield "worker.log", process_statuses[f"{repo.process_name}_celery"]
+        yield "worker.log", process_statuses[f"{get_process_name(repo)}_celery"]
     if len(repo.processes) >= 3:
-        yield "beat.log", process_statuses[f"{repo.process_name}_celerybeat"]
+        yield "beat.log", process_statuses[f"{get_process_name(repo)}_celerybeat"]
 
 
 async def get_pypi_version(

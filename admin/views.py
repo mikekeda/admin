@@ -9,21 +9,20 @@ import aiofiles
 import git
 from aiohttp import ClientSession
 from sanic.exceptions import abort
-from sanic.response import json as sanic_json
 from sanic.response import redirect
 from sanic.views import HTTPMethodView
-from sqlalchemy import and_
+from sqlalchemy import and_, select
 
 from admin.app import app, jinja
 from admin.forms import LoginForm
 from admin.models import Metric, Repo, authenticate
 from admin.settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL, get_env_var
 from admin.utils import (
-    api_authentication,
     check_black_status,
     check_security_headers,
     check_supervisor_status,
     get_log_files,
+    get_process_name,
     get_requirements_status,
     get_site_status,
     login,
@@ -36,14 +35,15 @@ from admin.utils import (
 @app.route("/")
 @login_required()
 async def homepage(request):
-    repos = await Repo.query.order_by(Repo.id).gino.all()
+    ex = request.ctx.conn.execute
+    repos = (await ex(select(Repo).order_by(Repo.id))).fetchall()
 
     # Collect processes names.
     processes = []
     for repo in repos:
         processes.extend(
             [
-                f"{repo.process_name}{['', '_celery', '_celerybeat'][i]}"
+                f"{get_process_name(repo)}{['', '_celery', '_celerybeat'][i]}"
                 for i, _ in enumerate(repo.processes)
             ]
         )
@@ -77,37 +77,35 @@ async def homepage(request):
         )
 
     process_statuses = dict(zip(processes, supervisor_statuses))
+    logs_files = (get_log_files(repo, process_statuses) for repo in repos)
 
-    for status, repo, black_status, security_headers_grade in zip(
-        site_statuses, repos, black_statuses, security_headers_grades
-    ):
-        repo.status = status == 200
-        repo.logs = get_log_files(repo, process_statuses)
-        repo.black_status = black_status
-        repo.security_headers_grade = security_headers_grade
-
-    return await jinja.render_async("sites.html", request, repos=repos)
+    return await jinja.render_async(
+        "sites.html",
+        request,
+        repos=zip(
+            repos, site_statuses, logs_files, black_statuses, security_headers_grades
+        ),
+    )
 
 
 @app.route("/sites/<repo_name>")
 @login_required()
 async def repo_page(request, repo_name: str):
+    ex = request.ctx.conn.execute
     repo_name = repo_name.replace("%20", " ")
-    site = await Repo.query.where(Repo.title == repo_name).gino.first()
+    site = (await ex(select(Repo).where(Repo.title == repo_name))).fetchone()
     if not site:
         abort(404)
 
-    sites = (
-        await Repo.query.with_only_columns([Repo.title]).order_by(Repo.title).gino.all()
-    )
+    sites = await ex(select(Repo).with_only_columns([Repo.title]).order_by(Repo.title))
     sites = [site.title for site in sites]
 
     processes = [
-        f"{site.process_name}{['', '_celery', '_celerybeat'][i]}"
+        f"{get_process_name(site)}{['', '_celery', '_celerybeat'][i]}"
         for i, _ in enumerate(site.processes)
     ]
 
-    folder = get_env_var("REPO_PREFIX") + site.process_name
+    folder = get_env_var("REPO_PREFIX") + get_process_name(site)
 
     async with ClientSession() as _session:
         (
@@ -119,12 +117,14 @@ async def repo_page(request, repo_name: str):
             is_black,
             security_headers_grade,
         ) = await asyncio.gather(
-            Metric.query.where(
-                and_(
-                    Metric.site == site.id,
-                    Metric.timestamp > datetime.now() - timedelta(weeks=1),
+            ex(
+                select(Metric).where(
+                    and_(
+                        Metric.site == site.id,
+                        Metric.timestamp > datetime.now() - timedelta(weeks=1),
+                    )
                 )
-            ).gino.all(),
+            ),
             get_site_status(site.url, _session),
             asyncio.gather(  # check supervisor statuses
                 *[check_supervisor_status(process) for process in processes]
@@ -146,7 +146,7 @@ async def repo_page(request, repo_name: str):
     ]
 
     process_statuses = dict(zip(processes, supervisor_statuses))
-    logs = get_log_files(site, process_statuses)
+    logs_files = get_log_files(site, process_statuses)
 
     requirements_statuses = {}
     if requirements_status:
@@ -160,7 +160,7 @@ async def repo_page(request, repo_name: str):
         site=site,
         metrics=metrics,
         site_status=site_status,
-        logs=logs,
+        logs=logs_files,
         sites=sites,
         requirements_statuses=requirements_statuses,
         is_black=is_black,
@@ -219,17 +219,20 @@ async def logs_page(request, repo_name: str, file_name: str):
 @app.route("/metrics")
 @login_required()
 async def metric(request):
-    sites = await Repo.query.order_by(Repo.id).where(Repo.url.isnot(None)).gino.all()
+    ex = request.ctx.conn.execute
+    sites = await ex(select(Repo).order_by(Repo.id).where(Repo.url.isnot(None)))
     site_ids = [s.id for s in sites]
 
     ping_dict = defaultdict(lambda: defaultdict(int))
     status_dict = defaultdict(lambda: defaultdict(int))
-    metrics = await Metric.query.where(
-        and_(
-            Metric.timestamp > datetime.now() - timedelta(days=1),
-            Metric.site.in_(site_ids),
+    metrics = await ex(
+        select(Metric).where(
+            and_(
+                Metric.timestamp > datetime.now() - timedelta(days=1),
+                Metric.site.in_(site_ids),
+            )
         )
-    ).gino.all()
+    )
     for m in metrics:
         timestamp = m.timestamp.isoformat(timespec="minutes")
         ping_dict[timestamp][m.site] = m.response_time.microseconds / 1000
@@ -311,14 +314,6 @@ async def logout_page(request):
     return redirect(LOGOUT_REDIRECT_URL)
 
 
-@app.route("/api", methods={"POST"})
-@api_authentication()
-async def api_page(request):
-    """Api page."""
-    # TODO[Mike] Do something!
-    return sanic_json({})
-
-
 class LoginView(HTTPMethodView):
     # noinspection PyMethodMayBeStatic
     async def get(self, request):
@@ -336,7 +331,9 @@ class LoginView(HTTPMethodView):
         form = LoginForm(request)
 
         if form.validate():
-            user = await authenticate(form.data["username"], form.data["password"])
+            user = await authenticate(
+                request.ctx.conn, form.data["username"], form.data["password"]
+            )
             if user:
                 await login(request, user)
                 return redirect(LOGIN_REDIRECT_URL)

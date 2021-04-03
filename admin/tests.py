@@ -1,18 +1,21 @@
 import os
+
+from sqlalchemy import insert
+from sqlalchemy.ext.asyncio import create_async_engine
 import pytest
 
 # Set test DB.
 if os.environ.get("ADMIN_DB_NAME") is None:
     os.environ["ADMIN_DB_NAME"] = "test_admin"
 
-from admin.models import User, db
+from admin.models import Base, hash_password, User
 from admin.views import app
 from admin.settings import get_env_var
 
 test_username = "test_user_1"
 test_password = os.urandom(16).hex()
 app.config["WTF_CSRF_ENABLED"] = False
-DB_URL = "asyncpg://{}:{}@{}:5432/{}".format(
+DB_URL = "postgresql+asyncpg://{}:{}@{}:5432/{}".format(
     get_env_var("DB_USER", "admin_admin"),
     get_env_var("DB_PASSWORD", "admin_admin_pasWQ27$"),
     get_env_var("DB_HOST", "127.0.0.1"),
@@ -44,21 +47,28 @@ def _test_page(url: str) -> None:
 @pytest.fixture
 async def setup():
     """Create test databases and tables for tests and drop them after."""
-    await db.set_bind(DB_URL)
+    engine = create_async_engine(DB_URL)
 
-    await db.gino.drop_all()
-    await db.gino.create_all()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
 
-    # Add test user.
-    await User.create(
-        username=test_username, email="test@test.com", password=test_password
-    )
-    await db.pop_bind().close()
+        # Add test user.
+        await conn.execute(
+            insert(User).values(
+                {
+                    "username": test_username,
+                    "email": "test@test.com",
+                    "password": hash_password(test_password),
+                }
+            )
+        )
+        await conn.commit()
 
-    yield db
+    yield engine
 
-    await db.set_bind(DB_URL)
-    await db.gino.drop_all()
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 def test_home_page(setup):

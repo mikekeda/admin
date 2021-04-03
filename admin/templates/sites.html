@@ -17,19 +17,19 @@
     </thead>
 
     <tbody>
-      {% for repo in repos %}
+      {% for repo, status, logs, black_status, security_headers_grade in repos %}
       <tr>
-        <td data-order="{% if repo.status %}0{% else %}1{% endif %}">
+        <td data-order="{% if status == 200 %}0{% else %}1{% endif %}">
           <a href="{{ repo.url }}" target="_blank" rel="noopener">
-            <div class="status-dot {% if repo.status %}green{% else %}red{% endif %}"></div>
+            <div class="status-dot {% if status == 200 %}green{% else %}red{% endif %}"></div>
           </a>
         </td>
         <td class="small-col">
           <a href="/sites/{{ repo.title }}">{{ repo.title }}</a>
         </td>
         <td>
-          {% for log_file, status in repo.logs %}
-            <a href="/sites/{{ repo.title }}/{{ log_file }}" class="{% if status == 'RUNNING' %}green{% else %}red{% endif %}-text" title="{{ status }}">
+          {% for log_file, process_status in logs %}
+            <a href="/sites/{{ repo.title }}/{{ log_file }}" class="{% if process_status == 'RUNNING' %}green{% else %}red{% endif %}-text" title="{{ process_status }}">
               {{ log_file }}
             </a>
           {% endfor %}
@@ -46,16 +46,16 @@
             <img src="{{ repo.coverage }}" alt="Coverage Badge" loading="lazy">
           </a>
           {% endif %}
-          {% if repo.black_status %}
+          {% if black_status %}
           <a href="https://github.com/mikekeda/{{ repo.name }}" target="_blank" rel="noopener">
             <img src="https://img.shields.io/badge/code%20style-black-000000.svg" loading="lazy" alt="Black Badge">
           </a>
           {% endif %}
         </td>
         <td>
-          {% if repo.security_headers_grade %}
+          {% if security_headers_grade %}
             <a href="https://securityheaders.com/?hide=on&q={{ repo.url }}" target="_blank" rel="noopener">
-              {{ repo.security_headers_grade }}
+              {{ security_headers_grade }}
             </a>
           {% endif %}
         </td>

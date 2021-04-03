@@ -13,7 +13,7 @@ from admin.models import Metric, Repo
 from admin.settings import EMAIL_CONFIG, SANIC_CONFIG
 
 engine = create_engine(
-    f"postgres://{ SANIC_CONFIG['DB_USER'] }:{ SANIC_CONFIG['DB_PASSWORD'] }"
+    f"postgresql://{ SANIC_CONFIG['DB_USER'] }:{ SANIC_CONFIG['DB_PASSWORD'] }"
     f"@{ SANIC_CONFIG['DB_HOST'] }/{ SANIC_CONFIG['DB_DATABASE'] }"
 )
 Session = sessionmaker(bind=engine, autocommit=True)

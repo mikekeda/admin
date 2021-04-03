@@ -2,24 +2,20 @@ from collections import namedtuple
 
 import aioredis
 from aiocache import caches
-from asyncio import AbstractEventLoop
-from gino import Gino
 from sanic import Sanic
 from sanic.log import logger
 from sanic.request import Request
 from sanic.response import HTTPResponse
 from sanic_jinja2 import SanicJinja2
 from sanic_session import AIORedisSessionInterface, Session
-from sqlalchemy.engine.url import URL
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from admin.settings import DEBUG, REDIS_CACHE_CONFIG, SANIC_CONFIG
-from admin.template_tags import get_item, any_in
+from admin.template_tags import any_in
 
 app = Sanic(__name__)
 app.config.update(SANIC_CONFIG)
 app.static("/static", "./static")
-
-db = Gino()
 
 # Set jinja_env and session_interface to None to avoid code style warning.
 app.jinja_env = namedtuple("JinjaEnv", ["globals"])({})
@@ -27,7 +23,6 @@ app.jinja_env = namedtuple("JinjaEnv", ["globals"])({})
 jinja = SanicJinja2(app, autoescape=True, enable_async=True)
 app.jinja_env.globals.update(
     any_in=any_in,
-    get_item=get_item,
     STATIC_URL="/static/"
     if DEBUG
     else "https://storage.googleapis.com/cdn.mkeda.me/admin/",
@@ -37,28 +32,12 @@ session = Session()
 
 
 @app.listener("before_server_start")
-async def init_cache(_app: Sanic, loop: AbstractEventLoop) -> None:
+async def init_cache(_app: Sanic, _) -> None:
     """Initialize db connections, session_interface and cache."""
-    if _app.config.get("DB_DSN"):
-        dsn = app.config.DB_DSN
-    else:
-        dsn = URL(
-            drivername=_app.config.setdefault("DB_DRIVER", "asyncpg"),
-            host=_app.config.setdefault("DB_HOST", "localhost"),
-            port=_app.config.setdefault("DB_PORT", 5432),
-            username=_app.config.setdefault("DB_USER", "postgres"),
-            password=_app.config.setdefault("DB_PASSWORD", ""),
-            database=_app.config.setdefault("DB_DATABASE", "postgres"),
-        )
-
-    await db.set_bind(
-        dsn,
-        echo=_app.config.setdefault("DB_ECHO", False),
-        min_size=_app.config.setdefault("DB_POOL_MIN_SIZE", 1),
-        max_size=_app.config.setdefault("DB_POOL_MAX_SIZE", 5),
-        ssl=_app.config.setdefault("DB_SSL"),
-        loop=loop,
-        **_app.config.setdefault("DB_KWARGS", {}),
+    _app.ctx.engine = create_async_engine(
+        "postgresql+asyncpg://"
+        f"{SANIC_CONFIG['DB_USER']}:{SANIC_CONFIG['DB_PASSWORD']}"
+        f"@{SANIC_CONFIG['DB_HOST']}/{SANIC_CONFIG['DB_DATABASE']}"
     )
 
     _app.ctx.redis = await aioredis.create_redis_pool(_app.config["redis"])
@@ -78,25 +57,23 @@ async def init_cache(_app: Sanic, loop: AbstractEventLoop) -> None:
 
 
 @app.listener("after_server_stop")
-async def close_redis_connections(_app, _) -> None:
+async def close_redis_connections(_app: Sanic, _) -> None:
     """Close db and redis connections."""
-    await db.pop_bind().close()
     _app.ctx.redis.close()
     await _app.ctx.redis.wait_closed()
 
 
 @app.middleware("request")
-async def add_session_to_request(request: Request) -> None:
+async def on_request(request: Request) -> None:
     """Set user value for templates."""
-    request.ctx.connection = await db.acquire(lazy=True)
+    request.ctx.conn = await request.app.ctx.engine.connect()
     request.ctx.user = request.ctx.session.get("user")
 
 
 @app.middleware("response")
 async def on_response(request: Request, _) -> None:
-    conn = getattr(request.ctx, "connection", None)
-    if conn is not None:
-        await conn.release()
+    await request.ctx.conn.commit()
+    await request.ctx.conn.close()
 
 
 @app.exception(Exception)

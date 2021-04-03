@@ -35,15 +35,12 @@ SANIC_CONFIG = {
     "DEBUG": bool(get_env_var("DEBUG", "True")),
     "SOCKET_FILE": get_env_var("SOCKET_FILE", "/temp/admin.sock"),
     "SECRET_KEY": SECRET_KEY,
-    "DB_USE_CONNECTION_FOR_REQUEST": False,
     "DB_USER": get_env_var("DB_USER", "admin_admin"),
     "DB_PASSWORD": get_env_var("DB_PASSWORD", "admin_admin_pasWQ27$"),
     "DB_HOST": get_env_var("DB_HOST", "127.0.0.1"),
     "DB_DATABASE": get_env_var("DB_NAME", "admin"),
     "redis": "redis://127.0.0.1/8",
 }
-
-API_KEY_HEADER = "Authorization"
 
 REDIS_CACHE_CONFIG = {
     "default": {
