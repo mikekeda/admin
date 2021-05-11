@@ -2,8 +2,8 @@ aiofiles==0.6.0
 aiohttp==3.7.4.post0
 aioredis==1.3.1
 aiocache==0.11.1
-alembic==1.6.0
-black==21.5b0
+alembic==1.6.2
+black==21.5b1
 celery==5.0.5
 GitPython==3.1.14
 msgpack==1.0.2
@@ -12,7 +12,7 @@ redis==3.5.3
 requests==2.25.1
 sanic_session==0.8.0
 sanic-jinja2==0.9.1
-sqlalchemy==1.4.13
+sqlalchemy==1.4.15
 bcrypt==3.2.0
 WTForms==2.3.3
 Sanic-WTF==0.6.0
