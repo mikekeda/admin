@@ -5,7 +5,7 @@ aiocache==0.11.1
 alembic==1.6.5
 black==21.6b0
 celery==5.1.0
-GitPython==3.1.17
+GitPython==3.1.14
 msgpack==1.0.2
 sanic==21.3.4
 redis==3.5.3
@@ -16,4 +16,4 @@ sqlalchemy==1.4.18
 bcrypt==3.2.0
 WTForms==2.3.3
 Sanic-WTF==0.6.0
-psycopg2-binary==2.8.6
+psycopg2-binary==2.9.1
