@@ -33,7 +33,7 @@ async def init_cache(_app: Sanic, _) -> None:
         f"@{SANIC_CONFIG['DB_HOST']}/{SANIC_CONFIG['DB_DATABASE']}"
     )
 
-    _app.ctx.redis = await aioredis.create_redis_pool(_app.config["redis"])
+    _app.ctx.redis = await aioredis.Redis.from_url(_app.config["redis"])
 
     # Pass the getter method for the connection pool into the session.
     session.init_app(
@@ -53,7 +53,6 @@ async def init_cache(_app: Sanic, _) -> None:
 async def close_redis_connections(_app: Sanic, _) -> None:
     """Close db and redis connections."""
     _app.ctx.redis.close()
-    await _app.ctx.redis.wait_closed()
 
 
 @app.middleware("request")
