@@ -7,7 +7,7 @@ black==21.7b0
 celery==5.1.2
 GitPython==3.1.18
 msgpack==1.0.2
-sanic==21.6.1
+sanic==21.6.2
 redis==3.5.3
 requests==2.26.0
 sanic_session==0.8.0
