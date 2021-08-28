@@ -8,6 +8,14 @@
   margin-top: 3.6rem !important;
 }
 
+.mb-2 {
+  margin-bottom: 1.2rem !important;
+}
+
+.mb-5 {
+  margin-bottom: 3rem !important;
+}
+
 .small-col {
   max-width: 150px;
 }
@@ -54,6 +62,12 @@ path:focus {
 
 .nav-wrapper h1 {
   margin: 0;
+}
+
+.container {
+  @media only screen and (min-width: 993px) {
+    width: 80%;
+  }
 }
 
 body > .container {

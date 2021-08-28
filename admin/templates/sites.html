@@ -4,10 +4,20 @@
 {% block page_title %}Sites{% endblock %}
 
 {% block body %}
-<div class="container my-5">
+<div class="container mb-5">
+  <form method="post">
+
+  <div class="input-field col s12">
+    <button class="btn waves-effect waves-light right mb-2" type="submit" name="action">
+      Update
+      <i class="material-icons right">send</i>
+    </button>
+  </div>
+
   <table class="table-list white bordered" id="sites">
     <thead class="grey darken-2">
       <tr>
+        <th class="no-br-radius white-text" width="30"></th>
         <th class="no-br-radius white-text" width="50">Status</th>
         <th class="no-br-radius white-text">Name</th>
         <th class="no-br-radius white-text">Logs</th>
@@ -17,8 +27,14 @@
     </thead>
 
     <tbody>
-      {% for repo, status, logs, black_status, security_headers_grade in repos %}
+      {% for repo, status, logs, black_status, security_headers_grade, available_updates in repos %}
       <tr>
+        <td>
+          <label>
+            <input type="checkbox" name="{{ repo.title }}"{% if not available_updates %} disabled="disabled"{% endif %}/>
+            <span></span>
+          </label>
+        </td>
         <td data-order="{% if status == 200 %}0{% else %}1{% endif %}">
           <a href="{{ repo.url }}" target="_blank" rel="noopener">
             <div class="status-dot {% if status == 200 %}green{% else %}red{% endif %}"></div>
@@ -35,9 +51,6 @@
           {% endfor %}
         </td>
         <td>
-          <a href="https://requires.io/github/mikekeda/{{ repo.name }}/requirements/?branch=master" target="_blank" rel="noopener">
-            <img src="https://requires.io/github/mikekeda/{{ repo.name }}/requirements.svg?branch=master" alt="Requirements Status" loading="lazy">
-          </a>
           <a href="https://app.codacy.com/gh/mikekeda/{{ repo.name }}/dashboard" target="_blank" rel="noopener">
             <img src="{{ repo.codacy }}" alt="Codacy Badge" loading="lazy">
           </a>
@@ -63,6 +76,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </form>
 </div>
 <script>
   document.addEventListener("DOMContentLoaded", function(event) {

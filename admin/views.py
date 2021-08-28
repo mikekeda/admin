@@ -6,7 +6,6 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 
 import aiofiles
-import git
 from aiohttp import ClientSession
 from sanic.exceptions import abort
 from sanic.response import redirect
@@ -23,69 +22,93 @@ from admin.utils import (
     check_supervisor_status,
     get_log_files,
     get_process_name,
-    get_requirements_status,
+    get_requirements_statuses,
     get_site_status,
     login,
     login_required,
     logout,
+    view_login_required,
     update_requirements,
 )
 
 
-@app.route("/")
-@login_required()
-async def homepage(request):
-    ex = request.ctx.conn.execute
-    repos = (await ex(select(Repo).order_by(Repo.id))).fetchall()
+class HomePageView(HTTPMethodView):
+    decorators = [view_login_required]
 
-    # Collect processes names.
-    processes = []
-    for repo in repos:
-        processes.extend(
-            [
-                f"{get_process_name(repo)}{['', '_celery', '_celerybeat'][i]}"
-                for i, _ in enumerate(repo.processes)
-            ]
+    # noinspection PyMethodMayBeStatic
+    async def get(self, request):
+        ex = request.ctx.conn.execute
+        repos = (await ex(select(Repo).order_by(Repo.id))).fetchall()
+
+        # Collect processes names.
+        processes = []
+        for repo in repos:
+            processes.extend(
+                [
+                    f"{get_process_name(repo.title)}{['', '_celery', '_celerybeat'][i]}"
+                    for i, _ in enumerate(repo.processes)
+                ]
+            )
+
+        # Check site and supervisor statuses.
+        async with ClientSession() as _session:
+            (
+                site_statuses,
+                supervisor_statuses,
+                black_statuses,
+                security_headers_grades,
+                requirements_statuses,
+            ) = await asyncio.gather(
+                asyncio.gather(
+                    *[  # check site statuses
+                        get_site_status(repo.url, _session) for repo in repos
+                    ]
+                ),
+                asyncio.gather(
+                    *[  # check supervisor statuses
+                        check_supervisor_status(process) for process in processes
+                    ]
+                ),
+                asyncio.gather(
+                    *[
+                        check_black_status(repo) for repo in repos
+                    ]  # check if code is black
+                ),
+                asyncio.gather(
+                    *[  # get security headers grade
+                        check_security_headers(repo, _session) for repo in repos
+                    ]
+                ),
+                asyncio.gather(
+                    *[  # get security headers grade
+                        get_requirements_statuses(repo.title) for repo in repos
+                    ]
+                ),
+            )
+
+        process_statuses = dict(zip(processes, supervisor_statuses))
+        logs_files = (get_log_files(repo, process_statuses) for repo in repos)
+
+        return await jinja.render_async(
+            "sites.html",
+            request,
+            repos=zip(
+                repos,
+                site_statuses,
+                logs_files,
+                black_statuses,
+                security_headers_grades,
+                requirements_statuses,
+            ),
         )
 
-    # Check site and supervisor statuses.
-    async with ClientSession() as _session:
-        (
-            site_statuses,
-            supervisor_statuses,
-            black_statuses,
-            security_headers_grades,
-        ) = await asyncio.gather(
-            asyncio.gather(
-                *[  # check site statuses
-                    get_site_status(repo.url, _session) for repo in repos
-                ]
-            ),
-            asyncio.gather(
-                *[  # check supervisor statuses
-                    check_supervisor_status(process) for process in processes
-                ]
-            ),
-            asyncio.gather(
-                *[check_black_status(repo) for repo in repos]  # check if code is black
-            ),
-            asyncio.gather(
-                *[  # get security headers grade
-                    check_security_headers(repo, _session) for repo in repos
-                ]
-            ),
-        )
+    # noinspection PyMethodMayBeStatic
+    async def post(self, request):
+        await asyncio.gather(*[
+            update_requirements(repo) for repo in request.form
+        ])
 
-    process_statuses = dict(zip(processes, supervisor_statuses))
-    logs_files = (get_log_files(repo, process_statuses) for repo in repos)
-
-    return await jinja.render_async(
-        "sites.html",
-        request,
-        repos=zip(
-            repos, site_statuses, logs_files, black_statuses, security_headers_grades
-        ),
-    )
+        return redirect("/")
 
 
 @app.route("/sites/<repo_name>")
@@ -101,19 +124,16 @@ async def repo_page(request, repo_name: str):
     sites = [site.title for site in sites]
 
     processes = [
-        f"{get_process_name(site)}{['', '_celery', '_celerybeat'][i]}"
+        f"{get_process_name(site.title)}{['', '_celery', '_celerybeat'][i]}"
         for i, _ in enumerate(site.processes)
     ]
-
-    folder = get_env_var("REPO_PREFIX") + get_process_name(site)
 
     async with ClientSession() as _session:
         (
             metrics,
             site_status,
             supervisor_statuses,
-            requirements_status,
-            requirements_dev_status,
+            requirements_statuses,
             is_black,
             security_headers_grade,
         ) = await asyncio.gather(
@@ -129,8 +149,7 @@ async def repo_page(request, repo_name: str):
             asyncio.gather(  # check supervisor statuses
                 *[check_supervisor_status(process) for process in processes]
             ),
-            get_requirements_status(folder, "requirements.txt", True),
-            get_requirements_status(folder, "requirements-dev.txt", True),
+            get_requirements_statuses(site.title),
             check_black_status(site),
             check_security_headers(site, _session),
         )
@@ -147,12 +166,6 @@ async def repo_page(request, repo_name: str):
 
     process_statuses = dict(zip(processes, supervisor_statuses))
     logs_files = get_log_files(site, process_statuses)
-
-    requirements_statuses = {}
-    if requirements_status:
-        requirements_statuses["requirements.txt"] = requirements_status
-    if requirements_dev_status:
-        requirements_statuses["requirements-dev.txt"] = requirements_dev_status
 
     return await jinja.render_async(
         "site.html",
@@ -172,21 +185,8 @@ async def repo_page(request, repo_name: str):
 @login_required()
 async def update_requirements_txt(_, repo_name: str):
     """Update requirements.txt"""
-    folder_name = get_env_var("REPO_PREFIX") + (
-        repo_name.replace("%20", " ")
-        .lower()
-        .replace("-", "_")
-        .replace(" ", "_")
-        .replace("/", "")
-        .replace(".", "")
-    )
-    await update_requirements(folder_name)
 
-    repo = git.Repo(folder_name)
-    repo.index.add(["requirements.txt", "requirements-dev.txt"])
-    repo.index.commit("Updated requirements.txt (automatically)")
-    repo.remotes.origin.push("master")
-    repo.remotes.github.push("master")
+    await update_requirements(repo_name)
 
     return redirect(f"/sites/{repo_name}")
 
@@ -199,7 +199,7 @@ async def logs_page(request, repo_name: str, file_name: str):
     if not file_name.endswith(".log") or not re.match("^[a-zA-Z- ]*$", repo_name):
         abort(403)
 
-    folder = repo_name.lower().replace("-", "_").replace(" ", "_")
+    folder = get_process_name(repo_name)
     logs = f"{get_env_var('LOG_FOLDER')}/{folder}/{file_name}"
     if not os.path.exists(logs):
         abort(404)
@@ -345,4 +345,5 @@ class LoginView(HTTPMethodView):
         return await jinja.render_async("login.html", request, form=form)
 
 
+app.add_route(HomePageView.as_view(), "/")
 app.add_route(LoginView.as_view(), "/login")

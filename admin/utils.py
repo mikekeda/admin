@@ -8,6 +8,7 @@ from typing import Iterator, Optional, Iterable
 
 import aiofiles
 from aiohttp import ClientConnectorError, ClientSession
+import git
 from sqlalchemy.engine import Row
 from sanic.exceptions import abort
 from sanic.log import logger
@@ -36,6 +37,19 @@ def login_required():
     return decorator
 
 
+def view_login_required(view):
+    """Authentication decorator."""
+
+    def decorator(request: Request, *args, **kwargs):
+        if request.ctx.session.get("user"):
+            return view(request, *args, **kwargs)
+
+        # User is not authorized.
+        return redirect(LOGOUT_REDIRECT_URL)
+
+    return decorator
+
+
 async def login(request: Request, user: Row) -> None:
     """Store user id and username in the session."""
     request.ctx.session["user"] = {"id": user.id, "username": user.username}
@@ -52,8 +66,8 @@ def logout(request: Request) -> None:
     request.ctx.session.modified = True  # mark as modified to update sid in cookies
 
 
-def get_process_name(repo: Row) -> str:
-    return repo.title.lower().replace("-", "_").replace(" ", "_")
+def get_process_name(title: str) -> str:
+    return title.lower().replace("-", "_").replace(" ", "_")
 
 
 async def get_site_status(url: str, _session: ClientSession) -> Optional[int]:
@@ -86,7 +100,7 @@ async def check_supervisor_status(process: str) -> str:
 
 async def check_black_status(repo: Row) -> bool:
     """Check if code is black."""
-    folder = get_env_var("REPO_PREFIX") + get_process_name(repo)
+    folder = get_env_var("REPO_PREFIX") + get_process_name(repo.title)
     proc = await asyncio.create_subprocess_shell(
         f'cd {folder} && black --check . --exclude "(migrations|alembic)"',
         stdout=asyncio.subprocess.PIPE,
@@ -112,12 +126,12 @@ def get_log_files(
 ) -> Iterator[tuple[str, str]]:
     """Return log file name with corresponding supervisor status."""
     if len(repo.processes) >= 1:
-        yield "error.log", process_statuses[get_process_name(repo)]
-        yield "out.log", process_statuses[get_process_name(repo)]
+        yield "error.log", process_statuses[get_process_name(repo.title)]
+        yield "out.log", process_statuses[get_process_name(repo.title)]
     if len(repo.processes) >= 2:
-        yield "worker.log", process_statuses[f"{get_process_name(repo)}_celery"]
+        yield "worker.log", process_statuses[f"{get_process_name(repo.title)}_celery"]
     if len(repo.processes) >= 3:
-        yield "beat.log", process_statuses[f"{get_process_name(repo)}_celerybeat"]
+        yield "beat.log", process_statuses[f"{get_process_name(repo.title)}_celerybeat"]
 
 
 async def get_pypi_version(
@@ -166,12 +180,48 @@ async def get_requirements_status(
     return versions
 
 
-async def update_requirements(folder: str):
-    """Update requirements.txt"""
-    for file_name in ("requirements.txt", "requirements-dev.txt"):
-        versions = await get_requirements_status(folder, file_name)
+async def get_requirements_statuses(title: str) -> dict[str, tuple[str, Optional[str], Optional[str]]]:
+    folder = get_env_var("REPO_PREFIX") + get_process_name(title)
 
-        async with aiofiles.open(f"{folder}/{file_name}", "w") as f:
+    requirements_status, requirements_dev_status = await asyncio.gather(*[
+        get_requirements_status(folder, "requirements.txt", True),
+        get_requirements_status(folder, "requirements-dev.txt", True),
+    ], return_exceptions=True)
+
+    requirements_statuses = {}
+    if requirements_status and not issubclass(type(requirements_status), Exception):
+        requirements_statuses["requirements.txt"] = requirements_status
+    if requirements_dev_status and not issubclass(type(requirements_dev_status), Exception):
+        requirements_statuses["requirements-dev.txt"] = requirements_dev_status
+
+    return requirements_statuses
+
+
+def update_remote(folder_name: str) -> None:
+    """Push local changes to the remote repositories."""
+    repo = git.Repo(folder_name)
+    repo.index.add(["requirements.txt", "requirements-dev.txt"])
+    repo.index.commit("Updated requirements.txt (automatically)")
+    repo.remotes.origin.push("master")
+    repo.remotes.github.push("master")
+
+
+async def update_requirements(repo_name: str) -> None:
+    """Update requirements for the given repository."""
+
+    folder_name = get_env_var("REPO_PREFIX") + (
+        repo_name.replace("%20", " ")
+        .lower()
+        .replace("-", "_")
+        .replace(" ", "_")
+        .replace("/", "")
+        .replace(".", "")
+    )
+
+    for file_name in ("requirements.txt", "requirements-dev.txt"):
+        versions = await get_requirements_status(folder_name, file_name)
+
+        async with aiofiles.open(f"{folder_name}/{file_name}", "w") as f:
             await f.writelines(
                 [
                     ("==".join([package, new_version]) if new_version else package)
@@ -179,3 +229,6 @@ async def update_requirements(folder: str):
                     for package, _, new_version in versions
                 ]
             )
+
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, update_remote, folder_name)

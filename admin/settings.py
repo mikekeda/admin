@@ -40,6 +40,7 @@ SANIC_CONFIG = {
     "DB_HOST": get_env_var("DB_HOST", "127.0.0.1"),
     "DB_DATABASE": get_env_var("DB_NAME", "admin"),
     "redis": "redis://127.0.0.1/8",
+    "RESPONSE_TIMEOUT": 120,
 }
 
 REDIS_CACHE_CONFIG = {
