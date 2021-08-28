@@ -180,18 +180,25 @@ async def get_requirements_status(
     return versions
 
 
-async def get_requirements_statuses(title: str) -> dict[str, tuple[str, Optional[str], Optional[str]]]:
+async def get_requirements_statuses(
+    title: str,
+) -> dict[str, tuple[str, Optional[str], Optional[str]]]:
     folder = get_env_var("REPO_PREFIX") + get_process_name(title)
 
-    requirements_status, requirements_dev_status = await asyncio.gather(*[
-        get_requirements_status(folder, "requirements.txt", True),
-        get_requirements_status(folder, "requirements-dev.txt", True),
-    ], return_exceptions=True)
+    requirements_status, requirements_dev_status = await asyncio.gather(
+        *[
+            get_requirements_status(folder, "requirements.txt", True),
+            get_requirements_status(folder, "requirements-dev.txt", True),
+        ],
+        return_exceptions=True,
+    )
 
     requirements_statuses = {}
     if requirements_status and not issubclass(type(requirements_status), Exception):
         requirements_statuses["requirements.txt"] = requirements_status
-    if requirements_dev_status and not issubclass(type(requirements_dev_status), Exception):
+    if requirements_dev_status and not issubclass(
+        type(requirements_dev_status), Exception
+    ):
         requirements_statuses["requirements-dev.txt"] = requirements_dev_status
 
     return requirements_statuses

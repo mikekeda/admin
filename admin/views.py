@@ -104,9 +104,7 @@ class HomePageView(HTTPMethodView):
 
     # noinspection PyMethodMayBeStatic
     async def post(self, request):
-        await asyncio.gather(*[
-            update_requirements(repo) for repo in request.form
-        ])
+        await asyncio.gather(*[update_requirements(repo) for repo in request.form])
 
         return redirect("/")
 
