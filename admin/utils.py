@@ -10,7 +10,7 @@ import aiofiles
 from aiohttp import ClientConnectorError, ClientSession
 import git
 from sqlalchemy.engine import Row
-from sanic.exceptions import abort
+from sanic.exceptions import SanicException
 from sanic.log import logger
 from sanic.request import Request
 from sanic.response import redirect
@@ -163,7 +163,7 @@ async def get_requirements_status(
             requirements = await f.readlines()
     except FileNotFoundError as e:
         logger.warning("No such Log file (%s/%s): %s", folder, file_name, repr(e))
-        abort(404)
+        SanicException("File not found", 404)
 
     async with ClientSession() as _session:
         versions = await asyncio.gather(

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 import aiofiles
 from aiohttp import ClientSession
-from sanic.exceptions import abort
+from sanic.exceptions import SanicException
 from sanic.response import redirect
 from sanic.views import HTTPMethodView
 from sqlalchemy import and_, select
@@ -116,7 +116,7 @@ async def repo_page(request, repo_name: str):
     repo_name = repo_name.replace("%20", " ")
     site = (await ex(select(Repo).where(Repo.title == repo_name))).fetchone()
     if not site:
-        abort(404)
+        SanicException("Site not found", 404)
 
     sites = await ex(select(Repo).with_only_columns([Repo.title]).order_by(Repo.title))
     sites = [site.title for site in sites]
@@ -195,12 +195,12 @@ async def logs_page(request, repo_name: str, file_name: str):
     """View site logs."""
 
     if not file_name.endswith(".log") or not re.match("^[a-zA-Z- ]*$", repo_name):
-        abort(403)
+        SanicException("Bad file name", 403)
 
     folder = get_process_name(repo_name)
     logs = f"{get_env_var('LOG_FOLDER')}/{folder}/{file_name}"
     if not os.path.exists(logs):
-        abort(404)
+        SanicException("File not found", 404)
 
     async with aiofiles.open(logs, "r") as f:
         logs = (await f.readlines())[-10000:]  # last 10000 lines
