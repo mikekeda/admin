@@ -3,7 +3,7 @@ aiohttp==3.7.4.post0
 aioredis==2.0.0
 aiocache==0.11.1
 alembic==1.7.1
-black==21.8b0
+black==21.9b0
 celery==5.1.2
 GitPython==3.1.18
 msgpack==1.0.2
