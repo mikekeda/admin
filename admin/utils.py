@@ -227,6 +227,9 @@ async def update_requirements(repo_name: str) -> None:
 
     for file_name in ("requirements.txt", "requirements-dev.txt"):
         versions = await get_requirements_status(folder_name, file_name)
+        logger.info(
+            "Updated requirements for %s/%s: %s", folder_name, file_name, versions
+        )
 
         async with aiofiles.open(f"{folder_name}/{file_name}", "w") as f:
             await f.writelines(
