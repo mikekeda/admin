@@ -1,8 +1,5 @@
-Flask-DebugToolbar==0.11.0
-Flask-Testing==0.8.1
-pep8==1.7.1
-pycodestyle==2.8.0
-pylint==2.11.1
-pylint-flask==0.6
+coverage==6.0.2
 pytest==6.2.5
 pytest-cov==3.0.0
+pytest-sanic==1.9.1
+sanic-testing==0.7.0
