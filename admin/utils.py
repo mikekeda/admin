@@ -240,5 +240,4 @@ async def update_requirements(repo_name: str) -> None:
                 ]
             )
 
-    loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, update_remote, folder_name)
+    update_remote(folder_name)
