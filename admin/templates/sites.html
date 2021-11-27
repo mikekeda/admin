@@ -29,7 +29,7 @@
     <tbody>
       {% for repo, status, logs, black_status, security_headers_grade, available_updates in repos %}
       <tr>
-        <td>
+        <td{% if available_updates %} class="tooltipped" data-position="right" data-tooltip="{{ available_updates }}"{% endif %}>
           <label>
             <input type="checkbox" name="{{ repo.title }}"{% if not available_updates %} disabled="disabled"{% endif %}/>
             <span></span>
