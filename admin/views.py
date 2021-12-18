@@ -55,23 +55,11 @@ class HomePageView(HTTPMethodView):
         async with ClientSession() as _session:
             (
                 supervisor_statuses,
-                black_statuses,
-                security_headers_grades,
                 requirements_statuses,
             ) = await asyncio.gather(
                 asyncio.gather(
                     *[  # check supervisor statuses
                         check_supervisor_status(process) for process in processes
-                    ]
-                ),
-                asyncio.gather(
-                    *[
-                        check_black_status(repo) for repo in repos
-                    ]  # check if code is black
-                ),
-                asyncio.gather(
-                    *[  # get security headers grade
-                        check_security_headers(repo, _session) for repo in repos
                     ]
                 ),
                 asyncio.gather(
@@ -90,8 +78,6 @@ class HomePageView(HTTPMethodView):
             repos=zip(
                 repos,
                 logs_files,
-                black_statuses,
-                security_headers_grades,
                 requirements_statuses,
             ),
         )
@@ -142,8 +128,8 @@ async def repo_page(request, repo_name: str):
                 *[check_supervisor_status(process) for process in processes]
             ),
             get_requirements_statuses(site.title),
-            check_black_status(site),
-            check_security_headers(site, _session),
+            check_black_status(site.title),
+            check_security_headers(site.url, _session),
         )
 
     metrics = [
@@ -173,15 +159,31 @@ async def repo_page(request, repo_name: str):
     )
 
 
-class SiteCheckApi(HTTPMethodView):
-    decorators = [view_login_required]
+@app.route("/api/site_check/<url>", methods=["GET"])
+@login_required()
+async def site_check(_, url: str):
+    url = unquote(url)
+    async with ClientSession() as _session:
+        status = await get_site_status(url, _session)
+    return response.json(status)
 
-    # noinspection PyMethodMayBeStatic
-    async def get(self, request, url: str):
-        url = unquote(url)
-        async with ClientSession() as _session:
-            status = await get_site_status(url, _session)
-        return response.json(status)
+
+@app.route("/api/black_status/<site>", methods=["GET"])
+@login_required()
+async def black_status_check(_, site: str):
+    black_status = await check_black_status(site)
+
+    return response.json(black_status)
+
+
+@app.route("/api/security_headers_check/<url>", methods=["GET"])
+@login_required()
+async def security_headers_check(_, url: str):
+    url = unquote(url)
+    async with ClientSession() as _session:
+        security_headers = await check_security_headers(url, _session)
+
+    return response.json(security_headers)
 
 
 @app.route("/sites/<repo_name>/update", methods=["POST"])
@@ -349,5 +351,4 @@ class LoginView(HTTPMethodView):
 
 
 app.add_route(HomePageView.as_view(), "/")
-app.add_route(SiteCheckApi.as_view(), "/api/site_check/<url>")
 app.add_route(LoginView.as_view(), "/login")
