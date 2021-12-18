@@ -168,6 +168,7 @@ async def site_check(_, url: str):
 @app.route("/api/black_status/<site>", methods=["GET"])
 @login_required()
 async def black_status_check(_, site: str):
+    site = unquote(site)
     black_status = await check_black_status(site)
 
     return response.json(black_status)
