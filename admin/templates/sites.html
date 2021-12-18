@@ -27,7 +27,7 @@
     </thead>
 
     <tbody>
-      {% for repo, status, logs, black_status, security_headers_grade, available_updates in repos %}
+      {% for repo, logs, black_status, security_headers_grade, available_updates in repos %}
       <tr>
         <td{% if available_updates %} class="tooltipped" data-position="right" data-tooltip="{{ available_updates }}"{% endif %}>
           <label>
@@ -37,7 +37,7 @@
         </td>
         <td data-order="{% if status == 200 %}0{% else %}1{% endif %}">
           <a href="{{ repo.url }}" target="_blank" rel="noopener">
-            <div class="status-dot {% if status == 200 %}green{% else %}red{% endif %}"></div>
+            <div class="status-dot grey"></div>
           </a>
         </td>
         <td class="small-col">
@@ -80,6 +80,9 @@
 </div>
 <script>
   document.addEventListener("DOMContentLoaded", function(event) {
+    let getUrl = window.location;
+    let a_classes;
+
     const getCellValue = (tr, idx) => tr.children[idx].dataset.order || tr.children[idx].innerText || tr.children[idx].textContent;
 
     const comparer = (idx, asc) => (a, b) => ((v1, v2) =>
@@ -93,6 +96,27 @@
             .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
             .forEach(tr => table.appendChild(tr) );
     })));
+
+    document.querySelectorAll('tr td:nth-child(2) a').forEach(function (a) {
+      fetch(getUrl.protocol + "//" + getUrl.host + "/api/site_check/" + encodeURIComponent(a.href))
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${reponse.status}`)
+            }
+            return response.json()
+        })
+        .then(data => {
+            a_classes = a.querySelector('div').classList;
+            a_classes.remove("grey");
+            if (data === 200) {
+                a_classes.add("green");
+            } else {
+                a_classes.add("red");
+            }
+        })
+        .catch(error => console.log(error));
+    });
+
   });
 </script>
 {% endblock %}

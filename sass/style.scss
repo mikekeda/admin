@@ -72,10 +72,16 @@ path:focus {
 
 body > .container {
   min-height: calc(100vh - 222px);
+  width: 100%;
+  max-width: 100%;
 
   @media only screen and (max-width: 600px) {
     margin: 0 !important;
     width: 100%;
+  }
+
+  #sites tr td:first-child {
+    padding-left: 15px;
   }
 
   #logs {

@@ -4,11 +4,12 @@ import os
 import re
 from collections import defaultdict
 from datetime import datetime, timedelta
+from urllib.parse import unquote
 
 import aiofiles
 from aiohttp import ClientSession
+from sanic import response
 from sanic.exceptions import SanicException
-from sanic.response import redirect
 from sanic.views import HTTPMethodView
 from sqlalchemy import and_, select
 
@@ -53,17 +54,11 @@ class HomePageView(HTTPMethodView):
         # Check site and supervisor statuses.
         async with ClientSession() as _session:
             (
-                site_statuses,
                 supervisor_statuses,
                 black_statuses,
                 security_headers_grades,
                 requirements_statuses,
             ) = await asyncio.gather(
-                asyncio.gather(
-                    *[  # check site statuses
-                        get_site_status(repo.url, _session) for repo in repos
-                    ]
-                ),
                 asyncio.gather(
                     *[  # check supervisor statuses
                         check_supervisor_status(process) for process in processes
@@ -94,7 +89,6 @@ class HomePageView(HTTPMethodView):
             request,
             repos=zip(
                 repos,
-                site_statuses,
                 logs_files,
                 black_statuses,
                 security_headers_grades,
@@ -106,7 +100,7 @@ class HomePageView(HTTPMethodView):
     async def post(self, request):
         await asyncio.gather(*[update_requirements(repo) for repo in request.form])
 
-        return redirect("/")
+        return response.redirect("/")
 
 
 @app.route("/sites/<repo_name>")
@@ -179,6 +173,17 @@ async def repo_page(request, repo_name: str):
     )
 
 
+class SiteCheckApi(HTTPMethodView):
+    decorators = [view_login_required]
+
+    # noinspection PyMethodMayBeStatic
+    async def get(self, request, url: str):
+        url = unquote(url)
+        async with ClientSession() as _session:
+            status = await get_site_status(url, _session)
+        return response.json(status)
+
+
 @app.route("/sites/<repo_name>/update", methods=["POST"])
 @login_required()
 async def update_requirements_txt(_, repo_name: str):
@@ -186,7 +191,7 @@ async def update_requirements_txt(_, repo_name: str):
 
     await update_requirements(repo_name)
 
-    return redirect(f"/sites/{repo_name}")
+    return response.redirect(f"/sites/{repo_name}")
 
 
 @app.route("/sites/<repo_name>/<file_name>")
@@ -311,7 +316,7 @@ async def about_page(request):
 async def logout_page(request):
     """Logout page."""
     logout(request)
-    return redirect(LOGOUT_REDIRECT_URL)
+    return response.redirect(LOGOUT_REDIRECT_URL)
 
 
 class LoginView(HTTPMethodView):
@@ -319,7 +324,7 @@ class LoginView(HTTPMethodView):
     async def get(self, request):
         """User login form."""
         if request.ctx.session.get("user"):
-            return redirect(LOGIN_REDIRECT_URL)
+            return response.redirect(LOGIN_REDIRECT_URL)
 
         form = LoginForm(request)
 
@@ -336,7 +341,7 @@ class LoginView(HTTPMethodView):
             )
             if user:
                 await login(request, user)
-                return redirect(LOGIN_REDIRECT_URL)
+                return response.redirect(LOGIN_REDIRECT_URL)
             else:
                 form.username.errors.append("Not valid username or password!")
 
@@ -344,4 +349,5 @@ class LoginView(HTTPMethodView):
 
 
 app.add_route(HomePageView.as_view(), "/")
+app.add_route(SiteCheckApi.as_view(), "/api/site_check/<url>")
 app.add_route(LoginView.as_view(), "/login")
