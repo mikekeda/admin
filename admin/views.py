@@ -53,10 +53,7 @@ class HomePageView(HTTPMethodView):
 
         # Check site and supervisor statuses.
         async with ClientSession() as _session:
-            (
-                supervisor_statuses,
-                requirements_statuses,
-            ) = await asyncio.gather(
+            supervisor_statuses, requirements_statuses = await asyncio.gather(
                 asyncio.gather(
                     *[  # check supervisor statuses
                         check_supervisor_status(process) for process in processes
