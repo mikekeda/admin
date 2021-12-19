@@ -27,13 +27,26 @@
     </thead>
 
     <tbody>
-      {% for repo, logs, available_updates in repos %}
-      <tr>
-        <td{% if available_updates %} class="tooltipped" data-position="right" data-tooltip="{{ available_updates }}"{% endif %}>
-          <label>
-            <input type="checkbox" name="{{ repo.title }}"{% if not available_updates %} disabled="disabled"{% endif %}/>
+      {% for repo, logs in repos %}
+      <tr data-site="{{ repo.title }}">
+        <td>
+          <label class="hide">
+            <input type="checkbox" name="{{ repo.title }}" disabled="disabled"/>
             <span></span>
           </label>
+          <div class="preloader-wrapper xsmall active">
+            <div class="spinner-layer spinner-green-only">
+              <div class="circle-clipper left">
+                <div class="circle"></div>
+              </div>
+              <div class="gap-patch">
+                <div class="circle"></div>
+              </div>
+              <div class="circle-clipper right">
+                <div class="circle"></div>
+              </div>
+            </div>
+          </div>
         </td>
         <td data-order="{% if status == 200 %}0{% else %}1{% endif %}">
           <a href="{{ repo.url }}" target="_blank" rel="noopener">
@@ -59,12 +72,40 @@
             <img src="{{ repo.coverage }}" alt="Coverage Badge" loading="lazy">
           </a>
           {% endif %}
-          <a href="https://github.com/mikekeda/{{ repo.name }}" class="black-status hide" data-site="{{ repo.title }}" target="_blank" rel="noopener">
+          <a href="https://github.com/mikekeda/{{ repo.name }}" class="black-status hide" target="_blank" rel="noopener">
             <img src="https://img.shields.io/badge/code%20style-black-000000.svg" loading="lazy" alt="Black Badge">
           </a>
+          <div class="preloader-wrapper xsmall active">
+            <div class="spinner-layer spinner-green-only">
+              <div class="circle-clipper left">
+                <div class="circle"></div>
+              </div>
+              <div class="gap-patch">
+                <div class="circle"></div>
+              </div>
+              <div class="circle-clipper right">
+                <div class="circle"></div>
+              </div>
+            </div>
+          </div>
         </td>
         <td>
-            <a href="https://securityheaders.com/?hide=on&q={{ repo.url }}" class="security-headers-grade"  data-site="{{ repo.url }}" target="_blank" rel="noopener"></a>
+          <a class="security-headers-grade" data-site="{{ repo.url }}"
+             href="https://securityheaders.com/?hide=on&q={{ repo.url }}" rel="noopener" target="_blank">
+            <div class="preloader-wrapper xsmall active">
+              <div class="spinner-layer spinner-green-only">
+                <div class="circle-clipper left">
+                  <div class="circle"></div>
+                </div>
+                <div class="gap-patch">
+                  <div class="circle"></div>
+                </div>
+                <div class="circle-clipper right">
+                  <div class="circle"></div>
+                </div>
+              </div>
+            </div>
+          </a>
         </td>
       </tr>
       {% endfor %}
@@ -73,62 +114,80 @@
   </form>
 </div>
 <script>
-  document.addEventListener("DOMContentLoaded", function(event) {
-    let getUrl = window.location;
-    let urlPrefix = getUrl.protocol + "//" + getUrl.host + "/api";
-    let a_classes;
+    document.addEventListener("DOMContentLoaded", function (event) {
+        let getUrl = window.location;
+        let urlPrefix = getUrl.protocol + "//" + getUrl.host + "/api";
+        let a_classes;
 
-    const getCellValue = (tr, idx) => tr.children[idx].dataset.order || tr.children[idx].innerText || tr.children[idx].textContent;
+        const getCellValue = (tr, idx) => tr.children[idx].dataset.order || tr.children[idx].innerText || tr.children[idx].textContent;
 
-    const comparer = (idx, asc) => (a, b) => ((v1, v2) =>
-        v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
+        const comparer = (idx, asc) => (a, b) => ((v1, v2) =>
+                v1 !== '' && v2 !== '' && !isNaN(v1) && !isNaN(v2) ? v1 - v2 : v1.toString().localeCompare(v2)
         )(getCellValue(asc ? a : b, idx), getCellValue(asc ? b : a, idx));
 
-    function getResponse(response) {
-        if (!response.ok) {
-            throw new Error(`Request failed with status ${reponse.status}`)
+        function getResponse(response) {
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${reponse.status}`)
+            }
+            return response.json()
         }
-        return response.json()
-    }
 
-    // do the work...
-    document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
-        const table = th.closest('table').querySelector('tbody');
-        Array.from(table.querySelectorAll('tr:nth-child(n+1)'))
-            .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
-            .forEach(tr => table.appendChild(tr) );
-    })));
+        // do the work...
+        document.querySelectorAll('th').forEach(th => th.addEventListener('click', (() => {
+            const table = th.closest('table').querySelector('tbody');
+            Array.from(table.querySelectorAll('tr:nth-child(n+1)'))
+                .sort(comparer(Array.from(th.parentNode.children).indexOf(th), this.asc = !this.asc))
+                .forEach(tr => table.appendChild(tr));
+        })));
 
-    document.querySelectorAll('tbody tr').forEach(function (tr) {
-        // Check site status.
-        fetch(urlPrefix + "/site_check/" + encodeURIComponent(tr.querySelector('td:nth-child(2) a').href))
-          .then(response => getResponse(response))
-          .then(data => {
-              a_classes = tr.querySelector('td:nth-child(2) a').querySelector('div').classList;
-              a_classes.remove("grey");
-              a_classes.add(data === 200 ? "green" : "red");
-          })
-          .catch(error => console.log(error));
+        document.querySelectorAll('tbody tr').forEach(function (tr) {
+            // Check available_ pdates status.
+            fetch(urlPrefix + "/available_updates/" + encodeURIComponent(tr.dataset.site))
+                .then(response => getResponse(response))
+                .then(data => {
+                    let td = tr.querySelector('td:first-child');
+                    td.querySelector('label + div').remove();
+                    tr.querySelector('label').classList.remove("hide");
+                    if (Object.keys(data).length !== 0) {
+                        td.classList.add("tooltipped");
+                        td.dataset.position = "right";
+                        td.dataset.tooltip = JSON.stringify(data);
+                        td.querySelector('input').disabled = false;
+                        M.Tooltip.init(td);
+                    }
+                })
+                .catch(error => console.log(error));
 
-        // Check black status.
-        fetch(urlPrefix + "/black_status/" + encodeURIComponent(tr.querySelector('a.black-status').dataset.site))
-          .then(response => getResponse(response))
-          .then(data => {
-              if (data === true) {
-                  tr.querySelector('a.black-status').classList.remove("hide");
-              }
-          })
-          .catch(error => console.log(error));
+            // Check site status.
+            fetch(urlPrefix + "/site_check/" + encodeURIComponent(tr.querySelector('td:nth-child(2) a').href))
+                .then(response => getResponse(response))
+                .then(data => {
+                    a_classes = tr.querySelector('td:nth-child(2) a').querySelector('div').classList;
+                    a_classes.remove("grey");
+                    a_classes.add(data === 200 ? "green" : "red");
+                })
+                .catch(error => console.log(error));
 
-        // Check security headers grade.
-        fetch(urlPrefix + "/security_headers_check/" + encodeURIComponent(tr.querySelector('a.security-headers-grade').dataset.site))
-          .then(response => getResponse(response))
-          .then(data => {
-              tr.querySelector('a.security-headers-grade').innerHTML = data;
-          })
-          .catch(error => console.log(error));
+            // Check black status.
+            fetch(urlPrefix + "/black_status/" + encodeURIComponent(tr.dataset.site))
+                .then(response => getResponse(response))
+                .then(data => {
+                    tr.querySelector('a.black-status + div').remove();
+                    if (data === true) {
+                        tr.querySelector('a.black-status').classList.remove("hide");
+                    }
+                })
+                .catch(error => console.log(error));
+
+            // Check security headers grade.
+            fetch(urlPrefix + "/security_headers_check/" + encodeURIComponent(tr.querySelector('a.security-headers-grade').dataset.site))
+                .then(response => getResponse(response))
+                .then(data => {
+                    tr.querySelector('a.security-headers-grade').innerHTML = data;
+                })
+                .catch(error => console.log(error));
+        });
+
     });
-
-  });
 </script>
 {% endblock %}

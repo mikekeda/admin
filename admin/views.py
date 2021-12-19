@@ -51,20 +51,12 @@ class HomePageView(HTTPMethodView):
                 ]
             )
 
-        # Check site and supervisor statuses.
-        async with ClientSession() as _session:
-            supervisor_statuses, requirements_statuses = await asyncio.gather(
-                asyncio.gather(
-                    *[  # check supervisor statuses
-                        check_supervisor_status(process) for process in processes
-                    ]
-                ),
-                asyncio.gather(
-                    *[  # get security headers grade
-                        get_requirements_statuses(repo.title) for repo in repos
-                    ]
-                ),
-            )
+        # Check supervisor statuses.
+        supervisor_statuses = await asyncio.gather(
+            *[  # check supervisor statuses
+                check_supervisor_status(process) for process in processes
+            ]
+        )
 
         process_statuses = dict(zip(processes, supervisor_statuses))
         logs_files = (get_log_files(repo, process_statuses) for repo in repos)
@@ -75,7 +67,6 @@ class HomePageView(HTTPMethodView):
             repos=zip(
                 repos,
                 logs_files,
-                requirements_statuses,
             ),
         )
 
@@ -182,6 +173,15 @@ async def security_headers_check(_, url: str):
         security_headers = await check_security_headers(url, _session)
 
     return response.json(security_headers)
+
+
+@app.route("/api/available_updates/<site>", methods=["GET"])
+@login_required()
+async def security_headers_check(_, site: str):
+    site = unquote(site)
+    requirements_statuses = await get_requirements_statuses(site)
+
+    return response.json(requirements_statuses)
 
 
 @app.route("/sites/<repo_name>/update", methods=["POST"])
