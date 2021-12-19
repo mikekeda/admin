@@ -177,7 +177,7 @@ async def security_headers_check(_, url: str):
 
 @app.route("/api/available_updates/<site>", methods=["GET"])
 @login_required()
-async def security_headers_check(_, site: str):
+async def available_updates_check(_, site: str):
     site = unquote(site)
     requirements_statuses = await get_requirements_statuses(site)
 
