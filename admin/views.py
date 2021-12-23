@@ -44,7 +44,6 @@ class HomePageView(HTTPMethodView):
 
         # Collect processes names.
         processes = []
-        python_versions = []
         for repo in repos:
             processes.extend(
                 [
@@ -52,7 +51,6 @@ class HomePageView(HTTPMethodView):
                     for i, _ in enumerate(repo.processes)
                 ]
             )
-            python_versions.append(get_python_version(repo.title))
 
         # Check supervisor statuses.
         supervisor_statuses = await asyncio.gather(
@@ -61,6 +59,7 @@ class HomePageView(HTTPMethodView):
             ]
         )
 
+        python_versions = [get_python_version(repo.title) for repo in repos]
         process_statuses = dict(zip(processes, supervisor_statuses))
         logs_files = (get_log_files(repo, process_statuses) for repo in repos)
 
