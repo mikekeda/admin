@@ -30,6 +30,7 @@ SECRET_KEY = get_env_var("SECRET_KEY", "$2b$12$MWTgOhUlHUPKLkL0MO65UO")
 DEBUG = bool(get_env_var("DEBUG", "True"))
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login"
+ENV_FOLDER = get_env_var("ENV_FOLDER")
 
 SANIC_CONFIG = {
     "DEBUG": bool(get_env_var("DEBUG", "True")),

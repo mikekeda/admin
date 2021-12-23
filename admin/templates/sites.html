@@ -20,6 +20,7 @@
         <th class="no-br-radius white-text" width="30"></th>
         <th class="no-br-radius white-text" width="50">Status</th>
         <th class="no-br-radius white-text">Name</th>
+        <th class="no-br-radius white-text">Python</th>
         <th class="no-br-radius white-text">Logs</th>
         <th class="no-br-radius white-text">Badges</th>
         <th class="no-br-radius white-text" title="Security headers grade"></th>
@@ -27,7 +28,7 @@
     </thead>
 
     <tbody>
-      {% for repo, logs in repos %}
+      {% for repo, python_version, logs in repos %}
       <tr data-site="{{ repo.title }}">
         <td>
           <label class="hide">
@@ -55,6 +56,9 @@
         </td>
         <td class="small-col">
           <a href="/sites/{{ repo.title }}">{{ repo.title }}</a>
+        </td>
+        <td>
+          {{ python_version }}
         </td>
         <td>
           {% for log_file, process_status in logs %}

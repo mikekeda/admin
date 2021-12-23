@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import uuid
 from functools import wraps
 from shlex import quote
@@ -17,7 +18,7 @@ from sanic.response import redirect
 from sanic_session.base import SessionDict
 
 from admin.app import session
-from admin.settings import LOGOUT_REDIRECT_URL, get_env_var
+from admin.settings import LOGOUT_REDIRECT_URL, ENV_FOLDER, get_env_var
 
 
 def login_required():
@@ -199,6 +200,16 @@ async def get_requirements_statuses(
         requirements_statuses["requirements-dev.txt"] = requirements_dev_status
 
     return requirements_statuses
+
+
+def get_python_version(site: str) -> str:
+    """Get Python version for the given site."""
+    site = site.lower().replace(" ", "_")
+    for file in os.listdir(f"{ENV_FOLDER}/{site}/bin"):
+        if file.startswith("python3."):
+            return file[6:]
+
+    return ""
 
 
 def update_remote(folder_name: str) -> None:

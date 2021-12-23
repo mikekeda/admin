@@ -30,6 +30,7 @@ from admin.utils import (
     logout,
     view_login_required,
     update_requirements,
+    get_python_version,
 )
 
 
@@ -43,6 +44,7 @@ class HomePageView(HTTPMethodView):
 
         # Collect processes names.
         processes = []
+        python_versions = []
         for repo in repos:
             processes.extend(
                 [
@@ -50,6 +52,7 @@ class HomePageView(HTTPMethodView):
                     for i, _ in enumerate(repo.processes)
                 ]
             )
+            python_versions.append(get_python_version(repo.title))
 
         # Check supervisor statuses.
         supervisor_statuses = await asyncio.gather(
@@ -66,6 +69,7 @@ class HomePageView(HTTPMethodView):
             request,
             repos=zip(
                 repos,
+                python_versions,
                 logs_files,
             ),
         )
