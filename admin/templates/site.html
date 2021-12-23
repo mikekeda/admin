@@ -63,36 +63,43 @@
             <button class="btn waves-effect waves-light" type="submit" name="action">Update requirements
                 <i class="material-icons right">send</i>
             </button>
+
+            {% for file, requirements_status in requirements_statuses.items() %}
+            {% if requirements_status %}
+            <h4>Outdated requirements in {{ file }}:</h4>
+            <table class="table-list white bordered">
+                <thead class="grey darken-2">
+                    <tr>
+                        <th class="no-br-radius white-text" width="30px"></th>
+                        <th class="no-br-radius white-text">Package</th>
+                        <th class="no-br-radius white-text">Current</th>
+                        <th class="no-br-radius white-text">Latest</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                {% for package, current, latest in requirements_status %}
+                <tr>
+                    <td>
+                        <label>
+                            <input type="checkbox" name="{{ package }}" checked="checked"/>
+                            <span></span>
+                        </label>
+                    </td>
+                    <td>
+                        <a href="https://pypi.org/project/{{ package }}/" target="_blank" rel="noopener">
+                            {{ package }}
+                        </a>
+                    </td>
+                    <td>{{ current }}</td>
+                    <td>{{ latest }}</td>
+                {% endfor %}
+                </tbody>
+            </table>
         </form>
         {% endif %}
-
-        {% for file, requirements_status in requirements_statuses.items() %}
-        {% if requirements_status %}
-        <h4>Outdated requirements in {{ file }}:</h4>
-        <table class="table-list white bordered">
-            <thead class="grey darken-2">
-                <tr>
-                    <th class="no-br-radius white-text">Package</th>
-                    <th class="no-br-radius white-text">Current</th>
-                    <th class="no-br-radius white-text">Latest</th>
-                </tr>
-            </thead>
-
-            <tbody>
-            {% for package, current, latest in requirements_status %}
-            <tr>
-                <td>
-                    <a href="https://pypi.org/project/{{ package }}/" target="_blank" rel="noopener">
-                        {{ package }}
-                    </a>
-                </td>
-                <td>{{ current }}</td>
-                <td>{{ latest }}</td>
-            {% endfor %}
-            </tbody>
-        </table>
-        {% endif %}
         {% endfor %}
+        {% endif %}
 
         <h4>Metrics:</h4>
         <div id="ping_div"></div>

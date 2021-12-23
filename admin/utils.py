@@ -210,7 +210,7 @@ def update_remote(folder_name: str) -> None:
     repo.remotes.github.push("master")
 
 
-async def update_requirements(repo_name: str) -> None:
+async def update_requirements(repo_name: str, packages: set[str] = None) -> None:
     """Update requirements for the given repository."""
 
     folder_name = get_env_var("REPO_PREFIX") + (
@@ -231,9 +231,20 @@ async def update_requirements(repo_name: str) -> None:
         async with aiofiles.open(f"{folder_name}/{file_name}", "w") as f:
             await f.writelines(
                 [
-                    ("==".join([package, new_version]) if new_version else package)
+                    (
+                        "==".join(
+                            [
+                                package,
+                                new_version
+                                if (packages is None or package in packages)
+                                else current_version,
+                            ]
+                        )
+                        if new_version
+                        else package
+                    )
                     + "\n"
-                    for package, _, new_version in versions
+                    for package, current_version, new_version in versions
                 ]
             )
 

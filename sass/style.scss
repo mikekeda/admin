@@ -77,8 +77,11 @@ path:focus {
 
 body > .container {
   min-height: calc(100vh - 222px);
-  width: 100%;
-  max-width: 100%;
+
+  &.homepage {
+    width: 100%;
+    max-width: 100%;
+  }
 
   @media only screen and (max-width: 600px) {
     margin: 0 !important;

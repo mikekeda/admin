@@ -186,10 +186,10 @@ async def available_updates_check(_, site: str):
 
 @app.route("/sites/<repo_name>/update", methods=["POST"])
 @login_required()
-async def update_requirements_txt(_, repo_name: str):
+async def update_requirements_txt(request, repo_name: str):
     """Update requirements.txt"""
 
-    await update_requirements(repo_name)
+    await update_requirements(repo_name, set(request.form))
 
     return response.redirect(f"/sites/{repo_name}")
 
