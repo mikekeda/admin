@@ -12,7 +12,7 @@ sanic==21.9.3
 redis==4.0.2
 requests==2.26.0
 sanic_session==0.8.0
-sanic-jinja2==0.10.0
+sanic-jinja2==2021.12.25
 sqlalchemy==1.4.29
 bcrypt==3.2.0
 WTForms==3.0.1
