@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from admin.settings import DEBUG, REDIS_CACHE_CONFIG, SANIC_CONFIG
 from admin.template_tags import any_in
 
-app = Sanic(__name__)
+app = Sanic("admin")
 app.config.update(SANIC_CONFIG)
 app.static("/static", "./static")
 
