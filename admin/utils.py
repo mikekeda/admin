@@ -163,6 +163,7 @@ def get_log_files(
         yield "beat.log", process_statuses[f"{get_process_name(repo.title)}_celerybeat"]
 
 
+@cached(ttl=60, args_slice=1)
 async def get_pypi_version(
     line: str, _session: ClientSession
 ) -> tuple[str, Optional[str], Optional[str]]:
