@@ -194,6 +194,8 @@ async def api_page(
     request, site: str, build_number: int, status: str
 ) -> response.HTTPResponse:
     """Jenkins build status endpoint."""
+    site = site.replace("_", " ")
+
     ex = request.ctx.conn.execute
 
     repo = (await ex(select(Repo.id).where(Repo.title == site))).one()
