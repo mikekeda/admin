@@ -1,5 +1,4 @@
 import aioredis
-from aiocache import caches
 from sanic import Sanic, response
 from sanic.log import logger
 from sanic.request import Request
@@ -7,7 +6,7 @@ from sanic_jinja2 import SanicJinja2
 from sanic_session import AIORedisSessionInterface, Session
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from admin.settings import DEBUG, REDIS_CACHE_CONFIG, SANIC_CONFIG
+from admin.settings import DEBUG, SANIC_CONFIG
 from admin.template_tags import any_in
 
 app = Sanic("admin")
@@ -32,7 +31,9 @@ async def init_cache(_app: Sanic, _) -> None:
         f"@{SANIC_CONFIG['DB_HOST']}/{SANIC_CONFIG['DB_DATABASE']}"
     )
 
-    _app.ctx.redis = await aioredis.Redis.from_url(_app.config["redis"])
+    _app.ctx.redis = await aioredis.Redis.from_url(
+        _app.config["redis"], decode_responses=True
+    )
 
     # Pass the getter method for the connection pool into the session.
     session.init_app(
@@ -45,13 +46,11 @@ async def init_cache(_app: Sanic, _) -> None:
         ),
     )
 
-    caches.set_config(REDIS_CACHE_CONFIG)
-
 
 @app.listener("after_server_stop")
 async def close_redis_connections(_app: Sanic, _) -> None:
     """Close db and redis connections."""
-    _app.ctx.redis.close()
+    await _app.ctx.redis.close()
 
 
 @app.middleware("request")

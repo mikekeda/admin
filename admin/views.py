@@ -83,12 +83,12 @@ class HomePageView(HTTPMethodView):
 
 @app.route("/sites/<repo_name>")
 @login_required()
-async def repo_page(request, repo_name: str):
+async def site_page(request, repo_name: str):
     ex = request.ctx.conn.execute
     repo_name = repo_name.replace("%20", " ")
     site = (await ex(select(Repo).where(Repo.title == repo_name))).fetchone()
     if not site:
-        SanicException("Site not found", 404)
+        raise SanicException("Site not found", 404)
 
     sites = await ex(select(Repo).with_only_columns([Repo.title]).order_by(Repo.title))
     sites = [site.title for site in sites]
@@ -153,7 +153,7 @@ async def repo_page(request, repo_name: str):
 
 @app.route("/api/site_check/<url>", methods=["GET"])
 @login_required()
-async def site_check(_, url: str):
+async def site_api(_, url: str):
     url = unquote(url)
     async with ClientSession() as _session:
         status = await get_site_status(url, _session)
@@ -162,7 +162,7 @@ async def site_check(_, url: str):
 
 @app.route("/api/black_status/<site>", methods=["GET"])
 @login_required()
-async def black_status_check(_, site: str):
+async def black_status_api(_, site: str):
     site = unquote(site)
     black_status = await check_black_status(site)
 
@@ -171,7 +171,7 @@ async def black_status_check(_, site: str):
 
 @app.route("/api/security_headers_check/<url>", methods=["GET"])
 @login_required()
-async def security_headers_check(_, url: str):
+async def security_headers_api(_, url: str):
     url = unquote(url)
     async with ClientSession() as _session:
         security_headers = await check_security_headers(url, _session)
@@ -181,7 +181,7 @@ async def security_headers_check(_, url: str):
 
 @app.route("/api/available_updates/<site>", methods=["GET"])
 @login_required()
-async def available_updates_check(_, site: str):
+async def available_updates_api(_, site: str):
     site = unquote(site)
     requirements_statuses = await get_requirements_statuses(site)
 
@@ -190,7 +190,7 @@ async def available_updates_check(_, site: str):
 
 @app.route("/api/build/<site>/<build_number>/<status>", methods={"POST"})
 @api_authentication()
-async def api_page(
+async def build_api(
     request, site: str, build_number: int, status: str
 ) -> response.HTTPResponse:
     """Jenkins build status endpoint."""
@@ -243,16 +243,16 @@ async def update_requirements_txt(request, repo_name: str):
 
 @app.route("/sites/<repo_name>/<file_name>")
 @login_required()
-async def logs_page(request, repo_name: str, file_name: str):
+async def log_page(request, repo_name: str, file_name: str):
     """View site logs."""
 
     if not file_name.endswith(".log") or not re.match("^[a-zA-Z- ]*$", repo_name):
-        SanicException("Bad file name", 403)
+        raise SanicException("Bad file name", 403)
 
     folder = get_process_name(repo_name)
     logs = f"{get_env_var('LOG_FOLDER')}/{folder}/{file_name}"
     if not os.path.exists(logs):
-        SanicException("File not found", 404)
+        raise SanicException("File not found", 404)
 
     async with aiofiles.open(logs, "r") as f:
         logs = (await f.readlines())[-10000:]  # last 10000 lines
@@ -268,7 +268,7 @@ async def logs_page(request, repo_name: str, file_name: str):
 
 @app.route("/metrics")
 @login_required()
-async def metric(request):
+async def metric_page(request):
     ex = request.ctx.conn.execute
     sites = (
         await ex(select(Repo).order_by(Repo.id).where(Repo.url.isnot(None)))
@@ -306,7 +306,7 @@ async def metric(request):
 
 @app.route("/logs")
 @login_required()
-async def logs(request):
+async def logs_page(request):
     """Show Nginx access.log"""
     access_logs = []
 

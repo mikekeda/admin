@@ -45,16 +45,6 @@ SANIC_CONFIG = {
     "RESPONSE_TIMEOUT": 120,
 }
 
-REDIS_CACHE_CONFIG = {
-    "default": {
-        "cache": "aiocache.RedisCache",
-        "endpoint": "localhost",
-        "db": 8,
-        "timeout": 2,
-        "serializer": {"class": "aiocache.serializers.PickleSerializer"},
-    }
-}
-
 # CELERY STUFF
 CELERY_BROKER_URL = "redis://localhost:6379/8"
 CELERY_result_backend = "redis://localhost:6379/8"

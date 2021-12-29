@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import uuid
-from functools import wraps
+from functools import cache, wraps
 from shlex import quote
 from typing import Iterator, Optional, Iterable
 
@@ -11,15 +12,43 @@ import aiofiles
 from aiohttp import ClientConnectorError, ClientSession
 import git
 from sqlalchemy.engine import Row
-from sanic.exceptions import SanicException
 from sanic.log import logger
 from sanic.request import Request
 from sanic import response
 from sanic_session.base import SessionDict
 
-from admin.app import session
+from admin.app import app, session
 from admin.models import APIKey
 from admin.settings import API_KEY_HEADER, LOGOUT_REDIRECT_URL, ENV_FOLDER, get_env_var
+
+
+def cached(ttl: int = None, args_slice: int = None):
+    """Cache decorator."""
+
+    def decorator(f):
+        @wraps(f)
+        async def decorated_function(*args, **kwargs):
+            ordered_kwargs = sorted(kwargs.items())
+            cache_key = (
+                (f.__module__ or "")
+                + f.__name__
+                + str(args[:args_slice] if args_slice else args)
+                + str(ordered_kwargs)
+            )
+
+            async with app.ctx.redis.client() as conn:
+                value = await conn.get(cache_key)
+                if value:
+                    return json.loads(value)
+
+                value = await f(*args, **kwargs)
+                await conn.set(cache_key, json.dumps(value), ex=ttl)
+
+            return value
+
+        return decorated_function
+
+    return decorator
 
 
 def login_required():
@@ -72,11 +101,9 @@ def get_process_name(title: str) -> str:
     return title.lower().replace("-", "_").replace(" ", "_")
 
 
-async def get_site_status(url: str, _session: ClientSession) -> Optional[int]:
+@cached(ttl=300, args_slice=1)
+async def get_site_status(url: str, _session: ClientSession) -> int:
     """Get site status."""
-    if not url:
-        return None
-
     try:
         async with _session.get(url) as resp:
             status = resp.status
@@ -86,6 +113,7 @@ async def get_site_status(url: str, _session: ClientSession) -> Optional[int]:
     return status
 
 
+@cached(ttl=60)
 async def check_supervisor_status(process: str) -> str:
     """Check supervisor status of given process."""
     proc = await asyncio.create_subprocess_shell(
@@ -100,6 +128,7 @@ async def check_supervisor_status(process: str) -> str:
     return stdout.decode().strip()
 
 
+@cached(ttl=300)
 async def check_black_status(site: str) -> bool:
     """Check if code is black."""
     folder = get_env_var("REPO_PREFIX") + get_process_name(site)
@@ -113,6 +142,7 @@ async def check_black_status(site: str) -> bool:
     return "All done!" in stderr.decode()
 
 
+@cached(ttl=86400, args_slice=1)
 async def check_security_headers(url: str, _session: ClientSession) -> str:
     """Return security headers grade."""
     url = f"https://securityheaders.com/?hide=on&q={url}"
@@ -148,7 +178,7 @@ async def get_pypi_version(
             new_version = (await resp.json())["info"]["version"]
     except (ClientConnectorError, KeyError) as e:
         logger.warning("Error getting pypi info for %s: %s", package, repr(e))
-        return line, current_version, None  # we were now able to get latest version
+        return line, current_version, None  # we were now able to get the latest version
 
     return package, current_version, new_version
 
@@ -157,12 +187,8 @@ async def get_requirements_status(
     folder: str, file_name: str, show_only_outdated: bool = False
 ) -> Iterable[tuple[str, Optional[str], Optional[str]]]:
     """Parse requirements.txt to get list of packages with current and latest versions."""
-    try:
-        async with aiofiles.open(f"{folder}/{file_name}", "r") as f:
-            requirements = await f.readlines()
-    except FileNotFoundError as e:
-        logger.warning("No such Log file (%s/%s): %s", folder, file_name, repr(e))
-        SanicException("File not found", 404)
+    async with aiofiles.open(f"{folder}/{file_name}", "r") as f:
+        requirements = await f.readlines()
 
     async with ClientSession() as _session:
         versions = await asyncio.gather(
@@ -203,6 +229,7 @@ async def get_requirements_statuses(
     return requirements_statuses
 
 
+@cache
 def get_python_version(site: str) -> str:
     """Get Python version for the given site."""
     site = site.lower().replace(" ", "_")
