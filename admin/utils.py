@@ -14,11 +14,12 @@ from sqlalchemy.engine import Row
 from sanic.exceptions import SanicException
 from sanic.log import logger
 from sanic.request import Request
-from sanic.response import redirect
+from sanic import response
 from sanic_session.base import SessionDict
 
 from admin.app import session
-from admin.settings import LOGOUT_REDIRECT_URL, ENV_FOLDER, get_env_var
+from admin.models import APIKey
+from admin.settings import API_KEY_HEADER, LOGOUT_REDIRECT_URL, ENV_FOLDER, get_env_var
 
 
 def login_required():
@@ -31,7 +32,7 @@ def login_required():
                 return await f(request, *args, **kwargs)
 
             # User is not authorized.
-            return redirect(LOGOUT_REDIRECT_URL)
+            return response.redirect(LOGOUT_REDIRECT_URL)
 
         return decorated_function
 
@@ -46,7 +47,7 @@ def view_login_required(view):
             return view(request, *args, **kwargs)
 
         # User is not authorized.
-        return redirect(LOGOUT_REDIRECT_URL)
+        return response.redirect(LOGOUT_REDIRECT_URL)
 
     return decorator
 
@@ -210,6 +211,27 @@ def get_python_version(site: str) -> str:
             return file[6:]
 
     return ""
+
+
+def api_authentication():
+    """Api authentication decorator."""
+
+    def decorator(f):
+        @wraps(f)
+        async def decorated_function(request, *args, **kwargs):
+            token = request.headers.get(API_KEY_HEADER)
+            user = await APIKey.authenticate(request.ctx.conn.execute, token)
+
+            if user:
+                await login(request, user)
+                return await f(request, *args, **kwargs)
+
+            # User is not authorized.
+            return response.json({"status": "not_authorized"}, 403)
+
+        return decorated_function
+
+    return decorator
 
 
 def update_remote(folder_name: str) -> None:

@@ -31,6 +31,7 @@ DEBUG = bool(get_env_var("DEBUG", "True"))
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login"
 ENV_FOLDER = get_env_var("ENV_FOLDER")
+API_KEY_HEADER = "Authorization"
 
 SANIC_CONFIG = {
     "DEBUG": bool(get_env_var("DEBUG", "True")),

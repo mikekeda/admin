@@ -1,9 +1,8 @@
 import aioredis
 from aiocache import caches
-from sanic import Sanic
+from sanic import Sanic, response
 from sanic.log import logger
 from sanic.request import Request
-from sanic.response import HTTPResponse
 from sanic_jinja2 import SanicJinja2
 from sanic_session import AIORedisSessionInterface, Session
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -71,17 +70,21 @@ async def on_response(request: Request, _) -> None:
 @app.exception(Exception)
 async def exception_handler(
     request: Request, exception: Exception, **__
-) -> HTTPResponse:
+) -> response.HTTPResponse:
     """Exception handler returns error in json format."""
     status_code = getattr(exception, "status_code", 500)
+    error = " ".join(str(arg) for arg in exception.args)
 
     if status_code == 500:
         logger.exception(exception)
+
+    if request.path.startswith("/api/"):
+        return response.json({"error": error}, status_code)
 
     return await jinja.render_async(
         "error.html",
         request,
         status=status_code,
         status_code=status_code,
-        message=" ".join(str(arg) for arg in exception.args),
+        message=error,
     )

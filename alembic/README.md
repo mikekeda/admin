@@ -12,4 +12,4 @@ Run specific migration:
 `alembic upgrade 3acb47b42db5`
 
 Revert last migration:
-`alembic -n client downgrade -1`
+`alembic downgrade -1`

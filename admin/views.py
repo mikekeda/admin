@@ -11,13 +11,14 @@ from aiohttp import ClientSession
 from sanic import response
 from sanic.exceptions import SanicException
 from sanic.views import HTTPMethodView
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, insert, update
 
 from admin.app import app, jinja
 from admin.forms import LoginForm
-from admin.models import Metric, Repo, authenticate
+from admin.models import Metric, Repo, JenkinsBuild, authenticate
 from admin.settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL, get_env_var
 from admin.utils import (
+    api_authentication,
     check_black_status,
     check_security_headers,
     check_supervisor_status,
@@ -185,6 +186,47 @@ async def available_updates_check(_, site: str):
     requirements_statuses = await get_requirements_statuses(site)
 
     return response.json(requirements_statuses)
+
+
+@app.route("/api/build/<site>/<build_number>/<status>", methods={"POST"})
+@api_authentication()
+async def api_page(
+    request, site: str, build_number: int, status: str
+) -> response.HTTPResponse:
+    """Jenkins build status endpoint."""
+    ex = request.ctx.conn.execute
+
+    repo = (await ex(select(Repo.id).where(Repo.title == site))).one()
+
+    if status == "STARTED":
+        await ex(
+            insert(JenkinsBuild).values(
+                site_id=repo.id,
+                number=build_number,
+                status=status,
+            )
+        )
+    else:
+        (
+            await ex(
+                update(JenkinsBuild)
+                .where(
+                    and_(
+                        JenkinsBuild.site_id == repo.id,
+                        JenkinsBuild.number == build_number,
+                    )
+                )
+                .values(
+                    status=status,
+                    finished=datetime.utcnow()
+                    if status in {"SUCCESS", "FAILURE", "ABORTED"}
+                    else None,
+                )
+                .returning(JenkinsBuild.id)
+            )
+        ).one()
+
+    return response.json({"status": "ok"}, 201)
 
 
 @app.route("/sites/<repo_name>/update", methods=["POST"])
