@@ -195,7 +195,6 @@ async def build_api(
     request, site: str, build_number: int, status: str
 ) -> response.HTTPResponse:
     """Jenkins build status endpoint."""
-    site = site.replace("_", " ")
     asyncio.create_task(
         save_build_info(request.app.ctx.engine, site, build_number, status)
     )

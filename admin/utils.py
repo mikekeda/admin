@@ -330,15 +330,16 @@ async def update_requirements(repo_name: str, packages: set[str] = None) -> None
 
 
 async def save_build_info(
-    engine: AsyncEngine, site: str, build_number: int, status: str
+    engine: AsyncEngine, jenkins_site: str, build_number: int, status: str
 ) -> None:
     """Save Jenkins build info."""
+    site = jenkins_site.replace("_", " ")
     values = {}
     if status == "SUCCESS":
         # Get test_coverage.
         test_coverage = (
             ElementTree.parse(
-                f"{JENKINS_HOME}/jobs/{site}/builds/{build_number}/coverage.xml"
+                f"{JENKINS_HOME}/jobs/{jenkins_site}/builds/{build_number}/coverage.xml"
             )
             .getroot()
             .get("line-rate")
@@ -355,7 +356,7 @@ async def save_build_info(
 
         # Get pep8_violations, pylint_violations.
         root = ElementTree.parse(
-            f"{JENKINS_HOME}/jobs/{site}/builds/{build_number}/violations/violations.xml"
+            f"{JENKINS_HOME}/jobs/{jenkins_site}/builds/{build_number}/violations/violations.xml"
         ).getroot()
         for t in root:
             for f in t:
@@ -363,7 +364,8 @@ async def save_build_info(
 
         # Get commit, commit_message.
         with open(
-            f"{JENKINS_HOME}/jobs/{site}/builds/{build_number}/changelog.xml", "r"
+            f"{JENKINS_HOME}/jobs/{jenkins_site}/builds/{build_number}/changelog.xml",
+            "r",
         ) as f:
             for line in f:
                 if line.startswith("commit "):
