@@ -11,11 +11,11 @@ from aiohttp import ClientSession
 from sanic import response
 from sanic.exceptions import SanicException
 from sanic.views import HTTPMethodView
-from sqlalchemy import and_, select, insert, update
+from sqlalchemy import and_, select
 
 from admin.app import app, jinja
 from admin.forms import LoginForm
-from admin.models import Metric, Repo, JenkinsBuild, authenticate
+from admin.models import Metric, Repo, authenticate
 from admin.settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL, get_env_var
 from admin.utils import (
     api_authentication,
@@ -29,6 +29,7 @@ from admin.utils import (
     login,
     login_required,
     logout,
+    save_build_info,
     view_login_required,
     update_requirements,
     get_python_version,
@@ -195,38 +196,9 @@ async def build_api(
 ) -> response.HTTPResponse:
     """Jenkins build status endpoint."""
     site = site.replace("_", " ")
-
-    ex = request.ctx.conn.execute
-
-    repo = (await ex(select(Repo.id).where(Repo.title == site))).one()
-
-    if status == "STARTED":
-        await ex(
-            insert(JenkinsBuild).values(
-                site_id=repo.id,
-                number=build_number,
-                status=status,
-            )
-        )
-    else:
-        (
-            await ex(
-                update(JenkinsBuild)
-                .where(
-                    and_(
-                        JenkinsBuild.site_id == repo.id,
-                        JenkinsBuild.number == build_number,
-                    )
-                )
-                .values(
-                    status=status,
-                    finished=datetime.utcnow()
-                    if status in {"SUCCESS", "FAILURE", "ABORTED"}
-                    else None,
-                )
-                .returning(JenkinsBuild.id)
-            )
-        ).one()
+    asyncio.create_task(
+        save_build_info(request.app.ctx.engine, site, build_number, status)
+    )
 
     return response.json({"status": "ok"}, 201)
 

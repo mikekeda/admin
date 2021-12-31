@@ -109,11 +109,17 @@ class JenkinsBuild(Base):
     __table_args__ = (UniqueConstraint("site_id", "number", name="unique_build"),)
 
     id = Column(Integer, primary_key=True)
-    site_id = Column(Integer, ForeignKey("repos.id"))
+    site_id = Column(Integer, ForeignKey("repos.id"), index=True)
     number = Column(Integer, nullable=False)
     status = Column(Enum(BuildStatus), nullable=False)
     started = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     finished = Column(DateTime)
+    black_status = Column(Boolean)
+    test_coverage = Column(Float)
+    pep8_violations = Column(Integer)
+    pylint_violations = Column(Integer)
+    commit = Column(String(40))
+    commit_message = Column(String(80))
 
     site = relationship("Repo")
 

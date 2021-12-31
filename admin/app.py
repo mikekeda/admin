@@ -28,7 +28,8 @@ async def init_cache(_app: Sanic, _) -> None:
     _app.ctx.engine = create_async_engine(
         "postgresql+asyncpg://"
         f"{SANIC_CONFIG['DB_USER']}:{SANIC_CONFIG['DB_PASSWORD']}"
-        f"@{SANIC_CONFIG['DB_HOST']}/{SANIC_CONFIG['DB_DATABASE']}"
+        f"@{SANIC_CONFIG['DB_HOST']}/{SANIC_CONFIG['DB_DATABASE']}",
+        pool_size=5,
     )
 
     _app.ctx.redis = await aioredis.Redis.from_url(

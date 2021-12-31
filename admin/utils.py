@@ -4,22 +4,32 @@ import asyncio
 import json
 import os
 import uuid
+from datetime import datetime
 from functools import cache, wraps
 from shlex import quote
 from typing import Iterator, Optional, Iterable
+from xml.etree import ElementTree
 
 import aiofiles
 from aiohttp import ClientConnectorError, ClientSession
 import git
-from sqlalchemy.engine import Row
 from sanic.log import logger
 from sanic.request import Request
 from sanic import response
 from sanic_session.base import SessionDict
+from sqlalchemy import and_, select, insert, update
+from sqlalchemy.engine import Row
+from sqlalchemy.ext.asyncio import AsyncEngine
 
 from admin.app import app, session
-from admin.models import APIKey
-from admin.settings import API_KEY_HEADER, LOGOUT_REDIRECT_URL, ENV_FOLDER, get_env_var
+from admin.models import APIKey, JenkinsBuild, Repo
+from admin.settings import (
+    API_KEY_HEADER,
+    LOGOUT_REDIRECT_URL,
+    ENV_FOLDER,
+    JENKINS_HOME,
+    get_env_var,
+)
 
 
 def cached(ttl: int = None, args_slice: int = None):
@@ -317,3 +327,80 @@ async def update_requirements(repo_name: str, packages: set[str] = None) -> None
             )
 
     update_remote(folder_name)
+
+
+async def save_build_info(
+    engine: AsyncEngine, site: str, build_number: int, status: str
+) -> None:
+    """Save Jenkins build info."""
+    values = {}
+    if status == "SUCCESS":
+        # Get test_coverage.
+        test_coverage = (
+            ElementTree.parse(
+                f"{JENKINS_HOME}/jobs/{site}/builds/{build_number}/coverage.xml"
+            )
+            .getroot()
+            .get("line-rate")
+        )
+
+        values = {
+            "black_status": await check_black_status(site),
+            "test_coverage": float(test_coverage),
+            "pep8_violations": 0,
+            "pylint_violations": 0,
+            "commit": "",
+            "commit_message": "",
+        }
+
+        # Get pep8_violations, pylint_violations.
+        root = ElementTree.parse(
+            f"{JENKINS_HOME}/jobs/{site}/builds/{build_number}/violations/violations.xml"
+        ).getroot()
+        for t in root:
+            for f in t:
+                values[f"{t.get('name')}_violations"] += int(f.get("count"))
+
+        # Get commit, commit_message.
+        with open(
+            f"{JENKINS_HOME}/jobs/{site}/builds/{build_number}/changelog.xml", "r"
+        ) as f:
+            for line in f:
+                if line.startswith("commit "):
+                    values["commit"] = line[6:].strip()
+                elif line.startswith("    "):
+                    values["commit_message"] = line[4:].strip()
+
+    async with engine.connect() as conn:
+        repo = (await conn.execute(select(Repo.id).where(Repo.title == site))).one()
+
+        if status == "STARTED":
+            await conn.execute(
+                insert(JenkinsBuild).values(
+                    site_id=repo.id,
+                    number=build_number,
+                    status=status,
+                )
+            )
+        else:
+            (
+                await conn.execute(
+                    update(JenkinsBuild)
+                    .where(
+                        and_(
+                            JenkinsBuild.site_id == repo.id,
+                            JenkinsBuild.number == build_number,
+                        )
+                    )
+                    .values(
+                        status=status,
+                        finished=datetime.utcnow()
+                        if status in {"SUCCESS", "FAILURE", "ABORTED"}
+                        else None,
+                        **values,
+                    )
+                    .returning(JenkinsBuild.id)
+                )
+            ).one()
+
+        await conn.commit()
