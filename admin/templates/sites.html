@@ -70,7 +70,9 @@
         </td>
         <td>
           {% for build in builds %}
-            <div class="status-dot {% if build.status.value == 'STARTED' %}grey{% elif build.status.value == 'SUCCESS' %}green{%else%}red{% endif %}"></div>
+            <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/{{ build.number }}/console" target="_blank">
+              <div class="tooltipped status-dot {% if build.status.value == 'STARTED' %}grey{% elif build.status.value == 'SUCCESS' %}green{%else%}red{% endif %}" data-position="top" data-tooltip="{{ build.commit_message }}"></div>
+            </a>
           {% endfor %}
         </td>
         <td>

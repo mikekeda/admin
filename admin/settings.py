@@ -32,6 +32,7 @@ LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login"
 ENV_FOLDER = get_env_var("ENV_FOLDER")
 JENKINS_HOME = get_env_var("JENKINS_HOME")
+SERVER_IP = get_env_var("SERVER_IP")
 API_KEY_HEADER = "Authorization"
 
 SANIC_CONFIG = {

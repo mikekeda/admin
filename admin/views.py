@@ -16,7 +16,12 @@ from sqlalchemy import and_, select
 from admin.app import app, jinja
 from admin.forms import LoginForm
 from admin.models import Metric, Repo, JenkinsBuild, authenticate
-from admin.settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL, get_env_var
+from admin.settings import (
+    LOGIN_REDIRECT_URL,
+    LOGOUT_REDIRECT_URL,
+    SERVER_IP,
+    get_env_var,
+)
 from admin.utils import (
     api_authentication,
     check_black_status,
@@ -296,7 +301,7 @@ async def logs_page(request):
     }
 
     known_ips = {
-        get_env_var("SERVER_IP"),
+        SERVER_IP,
         (request.headers.get("x-forwarded-for") or "").split(",")[0],
     }
 

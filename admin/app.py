@@ -6,7 +6,7 @@ from sanic_jinja2 import SanicJinja2
 from sanic_session import AIORedisSessionInterface, Session
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from admin.settings import DEBUG, SANIC_CONFIG
+from admin.settings import DEBUG, SANIC_CONFIG, SERVER_IP
 from admin.template_tags import any_in
 
 app = Sanic("admin")
@@ -18,6 +18,7 @@ jinja.env.globals["any_in"] = any_in
 jinja.env.globals["STATIC_URL"] = (
     "/static/" if DEBUG else "https://storage.googleapis.com/cdn.mkeda.me/admin/"
 )
+jinja.env.globals["SERVER_IP"] = SERVER_IP
 
 session = Session()
 
