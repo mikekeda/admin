@@ -15,7 +15,7 @@ from sqlalchemy import and_, select
 
 from admin.app import app, jinja
 from admin.forms import LoginForm
-from admin.models import Metric, Repo, authenticate
+from admin.models import Metric, Repo, JenkinsBuild, authenticate
 from admin.settings import LOGIN_REDIRECT_URL, LOGOUT_REDIRECT_URL, get_env_var
 from admin.utils import (
     api_authentication,
@@ -42,15 +42,21 @@ class HomePageView(HTTPMethodView):
     # noinspection PyMethodMayBeStatic
     async def get(self, request):
         ex = request.ctx.conn.execute
-        repos = (await ex(select(Repo).order_by(Repo.id))).fetchall()
+        sites = (await ex(select(Repo).order_by(Repo.id))).fetchall()
+
+        # Get Jenkins Builds.
+        rows = (await ex(select(JenkinsBuild).order_by(JenkinsBuild.started))).fetchall()
+        builds = defaultdict(list)
+        for row in rows:
+            builds[row.site_id].append(row)
 
         # Collect processes names.
         processes = []
-        for repo in repos:
+        for site in sites:
             processes.extend(
                 [
-                    f"{get_process_name(repo.title)}{['', '_celery', '_celerybeat'][i]}"
-                    for i, _ in enumerate(repo.processes)
+                    f"{get_process_name(site.title)}{['', '_celery', '_celerybeat'][i]}"
+                    for i, _ in enumerate(site.processes)
                 ]
             )
 
@@ -61,16 +67,18 @@ class HomePageView(HTTPMethodView):
             ]
         )
 
-        python_versions = [get_python_version(repo.title) for repo in repos]
+        python_versions = [get_python_version(site.title) for site in sites]
         process_statuses = dict(zip(processes, supervisor_statuses))
-        logs_files = (get_log_files(repo, process_statuses) for repo in repos)
+        builds_per_site = [builds[site.id][:5] for site in sites]
+        logs_files = (get_log_files(site, process_statuses) for site in sites)
 
         return await jinja.render_async(
             "sites.html",
             request,
             repos=zip(
-                repos,
+                sites,
                 python_versions,
+                builds_per_site,
                 logs_files,
             ),
         )

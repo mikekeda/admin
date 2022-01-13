@@ -20,15 +20,16 @@
         <th class="no-br-radius white-text" width="30"></th>
         <th class="no-br-radius white-text" width="50">Status</th>
         <th class="no-br-radius white-text">Name</th>
-        <th class="no-br-radius white-text">Python</th>
         <th class="no-br-radius white-text">Logs</th>
+        <th class="no-br-radius white-text">Python</th>
+        <th class="no-br-radius white-text">Builds</th>
         <th class="no-br-radius white-text">Badges</th>
         <th class="no-br-radius white-text" title="Security headers grade"></th>
       </tr>
     </thead>
 
     <tbody>
-      {% for repo, python_version, logs in repos %}
+      {% for repo, python_version, builds, logs in repos %}
       <tr data-site="{{ repo.title }}">
         <td>
           <label class="hide">
@@ -58,13 +59,18 @@
           <a href="/sites/{{ repo.title }}">{{ repo.title }}</a>
         </td>
         <td>
-          {{ python_version }}
-        </td>
-        <td>
           {% for log_file, process_status in logs %}
             <a href="/sites/{{ repo.title }}/{{ log_file }}" class="{% if process_status == 'RUNNING' %}green{% else %}red{% endif %}-text" title="{{ process_status }}">
               {{ log_file }}
             </a>
+          {% endfor %}
+        </td>
+        <td>
+          {{ python_version }}
+        </td>
+        <td>
+          {% for build in builds %}
+            <div class="status-dot {% if build.status.value == 'STARTED' %}grey{% elif build.status.value == 'SUCCESS' %}green{%else%}red{% endif %}"></div>
           {% endfor %}
         </td>
         <td>
