@@ -45,7 +45,9 @@ class HomePageView(HTTPMethodView):
         sites = (await ex(select(Repo).order_by(Repo.id))).fetchall()
 
         # Get Jenkins Builds.
-        rows = (await ex(select(JenkinsBuild).order_by(JenkinsBuild.started))).fetchall()
+        rows = (
+            await ex(select(JenkinsBuild).order_by(JenkinsBuild.started))
+        ).fetchall()
         builds = defaultdict(list)
         for row in rows:
             builds[row.site_id].append(row)
