@@ -76,7 +76,7 @@ class HomePageView(HTTPMethodView):
 
         python_versions = [get_python_version(site.title) for site in sites]
         process_statuses = dict(zip(processes, supervisor_statuses))
-        builds_per_site = [builds[site.id][:5] for site in sites]
+        builds_per_site = [builds[site.id][-5:] for site in sites]
         logs_files = (get_log_files(site, process_statuses) for site in sites)
 
         return await jinja.render_async(
