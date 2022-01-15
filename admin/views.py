@@ -117,10 +117,10 @@ async def site_page(request, repo_name: str):
     async with ClientSession() as _session:
         (
             metrics,
+            builds,
             site_status,
             supervisor_statuses,
             requirements_statuses,
-            is_black,
             security_headers_grade,
         ) = await asyncio.gather(
             ex(
@@ -129,16 +129,25 @@ async def site_page(request, repo_name: str):
                         Metric.site == site.id,
                         Metric.timestamp > datetime.now() - timedelta(weeks=1),
                     )
-                )
+                ).order_by(Metric.timestamp)
+            ),
+            ex(
+                select(JenkinsBuild).where(
+                    and_(
+                        JenkinsBuild.site_id == site.id,
+                    )
+                ).order_by(JenkinsBuild.started.desc()).limit(10)
             ),
             get_site_status(site.url, _session),
             asyncio.gather(  # check supervisor statuses
                 *[check_supervisor_status(process) for process in processes]
             ),
             get_requirements_statuses(site.title),
-            check_black_status(site.title),
             check_security_headers(site.url, _session),
         )
+
+    builds = builds.fetchall()[::-1]
+    is_black = builds[-1].black_status
 
     metrics = [
         [
@@ -150,6 +159,16 @@ async def site_page(request, repo_name: str):
         for m in metrics
     ]
 
+    builds = [
+        [
+            b.started.isoformat(),
+            b.pep8_violations,
+            b.pylint_violations,
+            b.test_coverage,
+        ]
+        for b in builds
+    ]
+
     process_statuses = dict(zip(processes, supervisor_statuses))
     logs_files = get_log_files(site, process_statuses)
 
@@ -158,6 +177,7 @@ async def site_page(request, repo_name: str):
         request,
         site=site,
         metrics=metrics,
+        builds=builds,
         site_status=site_status,
         logs=logs_files,
         sites=sites,
@@ -174,15 +194,6 @@ async def site_api(_, url: str):
     async with ClientSession() as _session:
         status = await get_site_status(url, _session)
     return response.json(status)
-
-
-@app.route("/api/black_status/<site>", methods=["GET"])
-@login_required()
-async def black_status_api(_, site: str):
-    site = unquote(site)
-    black_status = await check_black_status(site)
-
-    return response.json(black_status)
 
 
 @app.route("/api/security_headers_check/<url>", methods=["GET"])

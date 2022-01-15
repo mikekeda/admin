@@ -102,9 +102,12 @@
         {% endif %}
 
         <h4>Metrics:</h4>
-        <div id="ping_div"></div>
+        <div id="ping_div" class="left"></div>
         <div id="status_div" class="left"></div>
-        <div id="size_div" class="right"></div>
+        <div id="size_div" class="left"></div>
+        <div id="pylint_violations_div" class="left"></div>
+        <div id="pep8_violations_div" class="left"></div>
+        <div id="test_coverage_div" class="left"></div>
     </div>
 
 </div>
@@ -113,20 +116,24 @@
     google.charts.setOnLoadCallback(drawCharts);
 
     const _metrics = {{ metrics|safe }};
+    const _builds = {{ builds|safe }};
 
     function drawCharts() {
-        drawChart('Ping', 'ping (ms)', 1, 'ping_div', 1008, 500);
-        drawChart('Response status', '', 2, 'status_div', 504, 100);
-        drawChart('Response size', 'size (kB)', 3, 'size_div', 504, 100);
+        drawChart('Ping', 'ping (ms)', _metrics, 1, 'ping_div', 576, 500);
+        drawChart('Response status', '', _metrics, 2, 'status_div', 576, 100);
+        drawChart('Response size', 'size (kB)', _metrics, 3, 'size_div', 576, 100);
+        drawChart('pylint violations', '', _builds, 1, 'pylint_violations_div', 576, 100);
+        drawChart('PEP8 violations', '', _builds, 2, 'pep8_violations_div', 576, 100);
+        drawChart('Test coverage', '', _builds, 3, 'test_coverage_div', 576, 100);
     }
 
-    function drawChart(title, label, i, div_id, width, height) {
-        var data = new google.visualization.DataTable();
+    function drawChart(title, label, metrics, i, div_id, width, height) {
+        let data = new google.visualization.DataTable();
 
         data.addColumn('datetime', 'Time of Day');
         data.addColumn('number', label);
-        for (let idx in _metrics) {
-            data.addRow([new Date(_metrics[idx][0]), _metrics[idx][i]]);
+        for (let idx in metrics) {
+            data.addRow([new Date(metrics[idx][0]), metrics[idx][i]]);
         }
 
         const options = {

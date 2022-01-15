@@ -22,6 +22,9 @@
         <th class="no-br-radius white-text">Name</th>
         <th class="no-br-radius white-text">Logs</th>
         <th class="no-br-radius white-text">Python</th>
+        <th class="no-br-radius white-text">pep8</th>
+        <th class="no-br-radius white-text">pylint</th>
+        <th class="no-br-radius white-text">Coverage</th>
         <th class="no-br-radius white-text">Builds</th>
         <th class="no-br-radius white-text">Badges</th>
         <th class="no-br-radius white-text" title="Security headers grade"></th>
@@ -69,6 +72,15 @@
           {{ python_version }}
         </td>
         <td>
+          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/">{{ (builds|last).pep8_violations }}</a>
+        </td>
+        <td>
+          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/">{{ (builds|last).pylint_violations }}</a>
+        </td>
+        <td>
+          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/{{ (builds|last).number }}/cobertura/">{{ (builds|last).test_coverage|round(2) }}</a>
+        </td>
+        <td>
           {% for build in builds %}
             <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/{{ build.number }}/console" target="_blank">
               <div class="tooltipped status-dot {% if build.status.value == 'STARTED' %}grey{% elif build.status.value == 'SUCCESS' %}green{%else%}red{% endif %}" data-position="top" data-tooltip="{{ build.commit_message }}"></div>
@@ -84,22 +96,11 @@
             <img src="{{ repo.coverage }}" alt="Coverage Badge" loading="lazy">
           </a>
           {% endif %}
-          <a href="https://github.com/mikekeda/{{ repo.name }}" class="black-status hide" target="_blank" rel="noopener">
+          {% if (builds|last).black_status %}
+          <a href="https://github.com/mikekeda/{{ repo.name }}" class="black-status" target="_blank" rel="noopener">
             <img src="https://img.shields.io/badge/code%20style-black-000000.svg" loading="lazy" alt="Black Badge">
           </a>
-          <div class="preloader-wrapper xsmall active">
-            <div class="spinner-layer spinner-green-only">
-              <div class="circle-clipper left">
-                <div class="circle"></div>
-              </div>
-              <div class="gap-patch">
-                <div class="circle"></div>
-              </div>
-              <div class="circle-clipper right">
-                <div class="circle"></div>
-              </div>
-            </div>
-          </div>
+          {% endif %}
         </td>
         <td>
           <a class="security-headers-grade" data-site="{{ repo.url }}"
@@ -177,17 +178,6 @@
                     a_classes = tr.querySelector('td:nth-child(2) a').querySelector('div').classList;
                     a_classes.remove("grey");
                     a_classes.add(data === 200 ? "green" : "red");
-                })
-                .catch(error => console.log(error));
-
-            // Check black status.
-            fetch(urlPrefix + "/black_status/" + encodeURIComponent(tr.dataset.site))
-                .then(response => getResponse(response))
-                .then(data => {
-                    tr.querySelector('a.black-status + div').remove();
-                    if (data === true) {
-                        tr.querySelector('a.black-status').classList.remove("hide");
-                    }
                 })
                 .catch(error => console.log(error));
 
