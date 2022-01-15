@@ -124,19 +124,24 @@ async def site_page(request, repo_name: str):
             security_headers_grade,
         ) = await asyncio.gather(
             ex(
-                select(Metric).where(
+                select(Metric)
+                .where(
                     and_(
                         Metric.site == site.id,
                         Metric.timestamp > datetime.now() - timedelta(weeks=1),
                     )
-                ).order_by(Metric.timestamp)
+                )
+                .order_by(Metric.timestamp)
             ),
             ex(
-                select(JenkinsBuild).where(
+                select(JenkinsBuild)
+                .where(
                     and_(
                         JenkinsBuild.site_id == site.id,
                     )
-                ).order_by(JenkinsBuild.started.desc()).limit(10)
+                )
+                .order_by(JenkinsBuild.started.desc())
+                .limit(10)
             ),
             get_site_status(site.url, _session),
             asyncio.gather(  # check supervisor statuses
