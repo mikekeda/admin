@@ -167,9 +167,9 @@ async def site_page(request, repo_name: str):
     builds = [
         [
             b.started.isoformat(),
-            b.pep8_violations,
-            b.pylint_violations,
-            b.test_coverage,
+            b.pep8_violations or 0,
+            b.pylint_violations or 0,
+            b.test_coverage or 0,
         ]
         for b in builds
     ]
