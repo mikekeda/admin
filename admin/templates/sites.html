@@ -72,13 +72,13 @@
           {{ python_version }}
         </td>
         <td>
-          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/">{{ (builds|last).pep8_violations }}</a>
+          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/ target="_blank"">{{ (builds|last).pep8_violations }}</a>
         </td>
         <td>
-          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/">{{ (builds|last).pylint_violations }}</a>
+          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/" target="_blank">{{ (builds|last).pylint_violations }}</a>
         </td>
         <td>
-          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/{{ (builds|last).number }}/cobertura/">{% if (builds|last).test_coverage %}{{ (builds|last).test_coverage|round(2) }}{% endif %}</a>
+          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/{{ (builds|last).number }}/cobertura/" target="_blank">{% if (builds|last).test_coverage %}{{ (builds|last).test_coverage|round(2) }}{% endif %}</a>
         </td>
         <td>
           {% for build in builds %}
