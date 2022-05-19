@@ -72,7 +72,7 @@
           {{ python_version }}
         </td>
         <td>
-          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/ target="_blank"">{{ (builds|last).pep8_violations }}</a>
+          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/" target="_blank">{{ (builds|last).pep8_violations }}</a>
         </td>
         <td>
           <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/" target="_blank">{{ (builds|last).pylint_violations }}</a>
@@ -98,7 +98,7 @@
           {% endif %}
           {% if (builds|last).black_status %}
           <a href="https://github.com/mikekeda/{{ repo.name }}" class="black-status" target="_blank" rel="noopener">
-            <img src="https://img.shields.io/badge/code%20style-black-000000.svg" loading="lazy" alt="Black Badge">
+            <img src="{{ STATIC_URL }}img/code-style-black.svg" loading="lazy" alt="Black Badge">
           </a>
           {% endif %}
         </td>
