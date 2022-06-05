@@ -7,7 +7,7 @@ asyncpg==0.25.0
 black==22.3.0
 celery==5.2.7
 GitPython==3.1.27
-msgpack==1.0.3
+msgpack==1.0.4
 sanic==22.3.2
 redis==4.3.3
 requests==2.27.1
