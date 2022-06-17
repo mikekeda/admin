@@ -235,7 +235,7 @@ async def build_api(
 
 @app.route("/sites/<repo_name>/update", methods=["POST"])
 @login_required()
-async def update_requirements_txt(request, repo_name: str):
+async def update_requirements_api(request, repo_name: str):
     """Update requirements.txt"""
 
     await update_requirements(repo_name, set(request.form))

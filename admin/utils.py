@@ -281,18 +281,10 @@ def update_remote(folder_name: str) -> None:
     repo.remotes.github.push("master")
 
 
-async def update_requirements(repo_name: str, packages: set[str] = None) -> None:
-    """Update requirements for the given repository."""
-
-    folder_name = get_env_var("REPO_PREFIX") + (
-        repo_name.replace("%20", " ")
-        .lower()
-        .replace("-", "_")
-        .replace(" ", "_")
-        .replace("/", "")
-        .replace(".", "")
-    )
-
+async def update_requirements_txt(
+    packages: Optional[set[str]], folder_name: str
+) -> None:
+    """Update requirements.txt and requirements-dev.txt."""
     for file_name in ("requirements.txt", "requirements-dev.txt"):
         versions = await get_requirements_status(folder_name, file_name)
         logger.info(
@@ -326,6 +318,20 @@ async def update_requirements(repo_name: str, packages: set[str] = None) -> None
                 ]
             )
 
+
+async def update_requirements(repo_name: str, packages: set[str] = None) -> None:
+    """Update requirements for the given repository."""
+
+    folder_name = get_env_var("REPO_PREFIX") + (
+        repo_name.replace("%20", " ")
+        .lower()
+        .replace("-", "_")
+        .replace(" ", "_")
+        .replace("/", "")
+        .replace(".", "")
+    )
+
+    await update_requirements_txt(packages, folder_name)
     update_remote(folder_name)
 
 
