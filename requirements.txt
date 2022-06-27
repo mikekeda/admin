@@ -9,7 +9,7 @@ celery==5.2.7
 GitPython==3.1.27
 msgpack==1.0.4
 sanic==22.3.2
-redis==4.3.3
+redis==4.3.4
 requests==2.28.0
 sanic_session==0.8.0
 sanic-jinja2==2022.1.13
