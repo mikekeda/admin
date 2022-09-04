@@ -274,7 +274,12 @@ def api_authentication():
 
 def update_remote(folder_name: str, updated_packages: list[str]) -> None:
     """Push local changes to the remote repositories."""
-    updated_packages = ", ".join(updated_packages)[:72]
+    updated_packages = ", ".join(updated_packages)
+    updated_packages = (
+        updated_packages
+        if len(updated_packages) <= 69
+        else updated_packages[:69] + "..."
+    )
 
     repo = git.Repo(folder_name)
     repo.index.add(["requirements.txt", "requirements-dev.txt"])
@@ -392,7 +397,10 @@ async def save_build_info(
                 if line.startswith("commit "):
                     values["commit"] = line[6:].strip()
                 elif line.startswith("    "):
-                    values["commit_message"] = line[4:].strip()
+                    if values.get("commit_message"):
+                        values["commit_message"] += "\n" + line[4:].strip()
+                    else:
+                        values["commit_message"] = line[4:].strip()
 
     async with engine.connect() as conn:
         repo = (await conn.execute(select(Repo.id).where(Repo.title == site))).one()
