@@ -143,7 +143,7 @@ async def check_black_status(site: str) -> bool:
     """Check if code is black."""
     folder = get_env_var("REPO_PREFIX") + get_process_name(site)
     proc = await asyncio.create_subprocess_shell(
-        f'cd {folder} && black --check . --exclude "(migrations|alembic|node_modules)"',
+        f'cd {quote(folder)} && black --check . --exclude "(migrations|alembic|node_modules)"',
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -272,19 +272,23 @@ def api_authentication():
     return decorator
 
 
-def update_remote(folder_name: str) -> None:
+def update_remote(folder_name: str, updated_packages: list[str]) -> None:
     """Push local changes to the remote repositories."""
+    updated_packages = ", ".join(updated_packages)[:72]
+
     repo = git.Repo(folder_name)
     repo.index.add(["requirements.txt", "requirements-dev.txt"])
-    repo.index.commit("Updated requirements.txt (automatically)")
+    repo.index.commit(f"Updated requirements.txt (automatically)\n{updated_packages}")
     repo.remotes.origin.push("master")
     repo.remotes.github.push("master")
 
 
 async def update_requirements_txt(
     packages: Optional[set[str]], folder_name: str
-) -> None:
+) -> list[str]:
     """Update requirements.txt and requirements-dev.txt."""
+    updated_packages = []
+
     for file_name in ("requirements.txt", "requirements-dev.txt"):
         versions = await get_requirements_status(folder_name, file_name)
         logger.info(
@@ -296,6 +300,15 @@ async def update_requirements_txt(
                 for package, current_version, new_version in versions
                 if current_version != new_version
             ],
+        )
+        updated_packages.extend(
+            [
+                f"{package}: {current_version}->{new_version}"
+                for package, current_version, new_version in versions
+                if new_version
+                and new_version != current_version
+                and (packages is None or package in packages)
+            ]
         )
 
         async with aiofiles.open(f"{folder_name}/{file_name}", "w") as f:
@@ -318,6 +331,8 @@ async def update_requirements_txt(
                 ]
             )
 
+    return updated_packages
+
 
 async def update_requirements(repo_name: str, packages: set[str] = None) -> None:
     """Update requirements for the given repository."""
@@ -331,8 +346,8 @@ async def update_requirements(repo_name: str, packages: set[str] = None) -> None
         .replace(".", "")
     )
 
-    await update_requirements_txt(packages, folder_name)
-    update_remote(folder_name)
+    updated_packages = await update_requirements_txt(packages, folder_name)
+    update_remote(folder_name, updated_packages)
 
 
 async def save_build_info(
