@@ -17,4 +17,4 @@ sqlalchemy==1.4.41
 bcrypt==4.0.0
 WTForms==3.0.1
 Sanic-WTF==0.6.0
-psycopg2-binary==2.9.3
+psycopg2-binary==2.9.4
