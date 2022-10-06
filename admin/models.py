@@ -119,7 +119,7 @@ class JenkinsBuild(Base):
     pep8_violations = Column(Integer)
     pylint_violations = Column(Integer)
     commit = Column(String(40))
-    commit_message = Column(String(80))
+    commit_message = Column(String(120))
 
     site = relationship("Repo")
 

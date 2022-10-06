@@ -59,6 +59,7 @@ async def close_redis_connections(_app: Sanic, _) -> None:
 async def on_request(request: Request) -> None:
     """Set user value for templates."""
     request.ctx.conn = await request.app.ctx.engine.connect()
+    request.ctx.session = getattr(request.ctx, "session", {})
     request.ctx.user = request.ctx.session.get("user")
 
 
