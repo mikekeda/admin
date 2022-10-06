@@ -161,7 +161,7 @@
                     let td = tr.querySelector('td:first-child');
                     td.querySelector('label + div').remove();
                     tr.querySelector('label').classList.remove("hide");
-                    if (Object.keys(data).length !== 0) {
+                    if (Object.keys(data).includes("requirements.txt")) {
                         td.classList.add("tooltipped");
                         td.dataset.position = "right";
                         td.dataset.tooltip = JSON.stringify(data);
