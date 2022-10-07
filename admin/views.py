@@ -214,7 +214,7 @@ async def security_headers_api(_, url: str):
 
 @app.route("/api/available_updates/<site>", methods=["GET"])
 @login_required()
-async def available_updates_api(_, site: str):
+async def available_backend_updates_api(_, site: str):
     site = unquote(site)
     requirements_statuses = await get_requirements_statuses(site)
 
@@ -223,7 +223,7 @@ async def available_updates_api(_, site: str):
 
 @app.route("/api/frontend_updates/<site>", methods=["GET"])
 @login_required()
-async def available_updates_api(_, site: str):
+async def available_frontend_updates_api(_, site: str):
     site = unquote(site)
     requirements_statuses = await get_npm_status(site)
 
