@@ -4,9 +4,9 @@ aioredis==2.0.1
 aiocache==0.11.1
 alembic==1.8.1
 asyncpg==0.26.0
-black==22.8.0
+black==22.10.0
 celery==5.2.7
-GitPython==3.1.27
+GitPython==3.1.28
 msgpack==1.0.4
 sanic==22.9.0
 redis==4.3.4
