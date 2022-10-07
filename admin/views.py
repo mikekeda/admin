@@ -38,6 +38,7 @@ from admin.utils import (
     view_login_required,
     update_requirements,
     get_python_version,
+    get_npm_status,
 )
 
 
@@ -216,6 +217,15 @@ async def security_headers_api(_, url: str):
 async def available_updates_api(_, site: str):
     site = unquote(site)
     requirements_statuses = await get_requirements_statuses(site)
+
+    return response.json(requirements_statuses)
+
+
+@app.route("/api/frontend_updates/<site>", methods=["GET"])
+@login_required()
+async def available_updates_api(_, site: str):
+    site = unquote(site)
+    requirements_statuses = await get_npm_status(site)
 
     return response.json(requirements_statuses)
 

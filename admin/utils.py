@@ -194,6 +194,35 @@ async def get_pypi_version(
     return package, current_version, new_version
 
 
+@cached(ttl=60, args_slice=1)
+async def get_npm_version(
+    package: str, current_version: str, _session: ClientSession
+) -> tuple[str, Optional[str], Optional[str]]:
+    url = f"https://registry.npmjs.org/{package}"
+    async with _session.get(url) as resp:
+        new_version = (await resp.json())["dist-tags"]["latest"]
+
+    return package, current_version, new_version
+
+
+async def get_npm_status(
+    title: str,
+) -> Iterable[tuple[str, Optional[str], Optional[str]]]:
+    folder = get_env_var("REPO_PREFIX") + get_process_name(title)
+    async with aiofiles.open(f"{folder}/static/package.json", "r") as f:
+        content = json.loads(await f.read())
+        dependencies = content.get("dependencies", {})
+        async with ClientSession() as _session:
+            versions = await asyncio.gather(
+                *[
+                    get_npm_version(package, version.lstrip("^"), _session)
+                    for package, version in dependencies.items()
+                ]
+            )
+
+    return versions
+
+
 async def get_requirements_status(
     folder: str, file_name: str, show_only_outdated: bool = False
 ) -> Iterable[tuple[str, Optional[str], Optional[str]]]:
