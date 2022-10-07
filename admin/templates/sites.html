@@ -17,7 +17,8 @@
   <table class="table-list white bordered" id="sites">
     <thead class="grey darken-2">
       <tr>
-        <th class="no-br-radius white-text" width="30"></th>
+        <th class="no-br-radius white-text" width="30">B</th>
+        <th class="no-br-radius white-text" width="30">F</th>
         <th class="no-br-radius white-text" width="50">Status</th>
         <th class="no-br-radius white-text">Name</th>
         <th class="no-br-radius white-text">Logs</th>
@@ -37,6 +38,25 @@
         <td>
           <label class="hide">
             <input type="checkbox" name="{{ repo.title }}" disabled="disabled"/>
+            <span></span>
+          </label>
+          <div class="preloader-wrapper xsmall active">
+            <div class="spinner-layer spinner-green-only">
+              <div class="circle-clipper left">
+                <div class="circle"></div>
+              </div>
+              <div class="gap-patch">
+                <div class="circle"></div>
+              </div>
+              <div class="circle-clipper right">
+                <div class="circle"></div>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <label class="hide">
+            <input type="checkbox" name="frontend-{{ repo.title }}" disabled="disabled"/>
             <span></span>
           </label>
           <div class="preloader-wrapper xsmall active">
@@ -154,13 +174,13 @@
         })));
 
         document.querySelectorAll('tbody tr').forEach(function (tr) {
-            // Check available_ pdates status.
+            // Check available udates status.
             fetch(urlPrefix + "/available_updates/" + encodeURIComponent(tr.dataset.site))
                 .then(response => getResponse(response))
                 .then(data => {
                     let td = tr.querySelector('td:first-child');
                     td.querySelector('label + div').remove();
-                    tr.querySelector('label').classList.remove("hide");
+                    td.querySelector('label').classList.remove("hide");
                     if (Object.keys(data).includes("requirements.txt")) {
                         td.classList.add("tooltipped");
                         td.dataset.position = "right";
@@ -171,11 +191,27 @@
                 })
                 .catch(error => console.log(error));
 
-            // Check site status.
-            fetch(urlPrefix + "/site_check/" + encodeURIComponent(tr.querySelector('td:nth-child(2) a').href))
+            fetch(urlPrefix + "/frontend_updates/" + encodeURIComponent(tr.dataset.site))
                 .then(response => getResponse(response))
                 .then(data => {
-                    a_classes = tr.querySelector('td:nth-child(2) a').querySelector('div').classList;
+                    let td = tr.querySelector('td:nth-child(2)');
+                    td.querySelector('label + div').remove();
+                    td.querySelector('label').classList.remove("hide");
+                    if (Object.keys(data).length !== 0) {
+                        td.classList.add("tooltipped");
+                        td.dataset.position = "right";
+                        td.dataset.tooltip = JSON.stringify(data);
+                        td.querySelector('input').disabled = false;
+                        M.Tooltip.init(td);
+                    }
+                })
+                .catch(error => console.log(error));
+
+            // Check site status.
+            fetch(urlPrefix + "/site_check/" + encodeURIComponent(tr.querySelector('td:nth-child(3) a').href))
+                .then(response => getResponse(response))
+                .then(data => {
+                    a_classes = tr.querySelector('td:nth-child(3) a').querySelector('div').classList;
                     a_classes.remove("grey");
                     a_classes.add(data === 200 ? "green" : "red");
                 })
