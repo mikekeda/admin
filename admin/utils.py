@@ -206,7 +206,7 @@ async def get_npm_version(
 
 
 async def get_npm_status(
-    title: str,
+    title: str, show_only_outdated: bool = False
 ) -> Iterable[tuple[str, Optional[str], Optional[str]]]:
     folder = get_env_var("REPO_PREFIX") + get_process_name(title)
     async with aiofiles.open(f"{folder}/static/package.json", "r") as f:
@@ -219,6 +219,13 @@ async def get_npm_status(
                     for package, version in dependencies.items()
                 ]
             )
+
+    if show_only_outdated:
+        versions = [
+            (package, current_version, new_version)
+            for package, current_version, new_version in versions
+            if new_version is not None and current_version != new_version
+        ]
 
     return versions
 

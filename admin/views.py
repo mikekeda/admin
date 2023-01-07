@@ -226,9 +226,9 @@ async def available_backend_updates_api(_, site: str):
 async def available_frontend_updates_api(_, site: str):
     site = unquote(site)
     try:
-        requirements_statuses = await get_npm_status(site)
+        requirements_statuses = await get_npm_status(site, True)
     except FileNotFoundError:
-        return response.json([])
+        requirements_statuses = []
 
     return response.json(requirements_statuses)
 
