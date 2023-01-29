@@ -16,7 +16,7 @@ engine = create_engine(
     f"postgresql://{ SANIC_CONFIG['DB_USER'] }:{ SANIC_CONFIG['DB_PASSWORD'] }"
     f"@{ SANIC_CONFIG['DB_HOST'] }/{ SANIC_CONFIG['DB_DATABASE'] }"
 )
-Session = sessionmaker(bind=engine, autocommit=True)
+Session = sessionmaker(bind=engine)
 session = Session()
 
 
@@ -66,3 +66,4 @@ def check_sites():
                 send_email(repo)
 
     session.execute(Metric.__table__.insert(), metrics)
+    session.commit()
