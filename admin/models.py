@@ -104,7 +104,6 @@ class Metric(Base):
 
 
 class JenkinsBuild(Base):
-
     __tablename__ = "jenkins_builds"
     __table_args__ = (UniqueConstraint("site_id", "number", name="unique_build"),)
 
