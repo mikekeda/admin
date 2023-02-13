@@ -1,5 +1,5 @@
 aiofiles==23.1.0
-aiohttp==3.8.3
+aiohttp==3.8.4
 aioredis==2.0.1
 aiocache==0.12.0
 alembic==1.9.3
