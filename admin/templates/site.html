@@ -57,7 +57,7 @@
         </a>
     </p>
 
-    <div class="row">
+    <div class="row" id="chart-container">
         {% if requirements_statuses %}
         <form action="/sites/{{ site.title }}/update" method="POST">
             <button class="btn waves-effect waves-light" type="submit" name="action">Update requirements
@@ -115,16 +115,17 @@
     google.charts.load('current', {'packages':['corechart']});
     google.charts.setOnLoadCallback(drawCharts);
 
+    let container_width = document.getElementById("chart-container").offsetWidth / 2 - 1;
     const _metrics = {{ metrics|safe }};
     const _builds = {{ builds|safe }};
 
     function drawCharts() {
-        drawChart('Ping', 'ping (ms)', _metrics, 1, 'ping_div', 576, 500);
-        drawChart('Response status', '', _metrics, 2, 'status_div', 576, 100);
-        drawChart('Response size', 'size (kB)', _metrics, 3, 'size_div', 576, 100);
-        drawChart('pylint violations', '', _builds, 1, 'pylint_violations_div', 576, 100);
-        drawChart('PEP8 violations', '', _builds, 2, 'pep8_violations_div', 576, 100);
-        drawChart('Test coverage', '', _builds, 3, 'test_coverage_div', 576, 100);
+        drawChart('Ping', 'ping (ms)', _metrics, 1, 'ping_div', container_width, 500);
+        drawChart('Response status', '', _metrics, 2, 'status_div', container_width, 100);
+        drawChart('Response size', 'size (kB)', _metrics, 3, 'size_div', container_width, 100);
+        drawChart('pylint violations', '', _builds, 1, 'pylint_violations_div', container_width, 100);
+        drawChart('PEP8 violations', '', _builds, 2, 'pep8_violations_div', container_width, 100);
+        drawChart('Test coverage', '', _builds, 3, 'test_coverage_div', container_width, 100);
     }
 
     function drawChart(title, label, metrics, i, div_id, width, height) {
