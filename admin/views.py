@@ -107,7 +107,7 @@ async def site_page(request, repo_name: str):
     if not site:
         raise SanicException("Site not found", 404)
 
-    sites = await ex(select(Repo).with_only_columns([Repo.title]).order_by(Repo.title))
+    sites = await ex(select(Repo).with_only_columns(Repo.title).order_by(Repo.title))
     sites = [site.title for site in sites]
 
     processes = [
