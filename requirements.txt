@@ -10,7 +10,7 @@ GitPython==3.1.31
 msgpack==1.0.5
 sanic==23.3.0
 redis==4.5.4
-requests==2.29.0
+requests==2.30.0
 sanic_session==0.8.0
 sanic-jinja2==2022.11.11
 sqlalchemy==2.0.12
