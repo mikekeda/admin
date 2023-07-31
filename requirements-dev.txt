@@ -2,4 +2,4 @@ coverage==7.2.7
 pytest==7.4.0
 pytest-cov==4.1.0
 pytest-sanic==1.9.1
-sanic-testing==23.3.0
+sanic-testing==23.6.0
