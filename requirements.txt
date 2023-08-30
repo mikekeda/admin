@@ -2,7 +2,7 @@ aiofiles==23.2.1
 aiohttp==3.8.5
 aioredis==2.0.1
 aiocache==0.12.2
-alembic==1.11.2
+alembic==1.11.3
 asyncpg==0.28.0
 black==23.7.0
 celery==5.3.1
@@ -13,7 +13,7 @@ redis==5.0.0
 requests==2.31.0
 sanic_session==0.8.0
 sanic-jinja2==2022.11.11
-sqlalchemy==2.0.19
+sqlalchemy==2.0.20
 bcrypt==4.0.1
 WTForms==3.0.1
 Sanic-WTF==0.6.0
