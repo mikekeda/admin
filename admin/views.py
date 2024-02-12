@@ -53,8 +53,11 @@ class HomePageView(HTTPMethodView):
             await ex(select(JenkinsBuild).order_by(JenkinsBuild.started))
         ).fetchall()
         builds = defaultdict(list)
+        last_successful_builds = {}
         for row in rows:
             builds[row.site_id].append(row)
+            if row.status == "SUCCESS":
+                last_successful_builds[row.site_id] = row
 
         # Collect processes names.
         processes = []
@@ -85,6 +88,7 @@ class HomePageView(HTTPMethodView):
                 sites,
                 python_versions,
                 builds_per_site,
+                last_successful_builds,
                 logs_files,
             ),
         )

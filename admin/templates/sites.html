@@ -33,7 +33,7 @@
     </thead>
 
     <tbody>
-      {% for repo, python_version, builds, logs in repos %}
+      {% for repo, python_version, builds, metric, logs in repos %}
       <tr data-site="{{ repo.title }}">
         <td>
           <label class="hide">
@@ -92,13 +92,13 @@
           {{ python_version }}
         </td>
         <td>
-          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/" target="_blank">{{ (builds|last).pep8_violations }}</a>
+          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/" target="_blank">{{ metric.pep8_violations }}</a>
         </td>
         <td>
-          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/" target="_blank">{{ (builds|last).pylint_violations }}</a>
+          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/" target="_blank">{{ metric.pylint_violations }}</a>
         </td>
         <td>
-          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/{{ (builds|last).number }}/cobertura/" target="_blank">{% if (builds|last).test_coverage %}{{ (builds|last).test_coverage|round(2) }}{% endif %}</a>
+          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/{{ metric.number }}/cobertura/" target="_blank">{% if metric.test_coverage %}{{ metric.test_coverage|round(2) }}{% endif %}</a>
         </td>
         <td>
           {% for build in builds %}
@@ -116,7 +116,7 @@
             <img src="{{ repo.coverage }}" alt="Coverage Badge" loading="lazy">
           </a>
           {% endif %}
-          {% if (builds|last).black_status %}
+          {% if metric.black_status %}
           <a href="https://github.com/mikekeda/{{ repo.name }}" class="black-status" target="_blank" rel="noopener">
             <img src="{{ STATIC_URL }}img/code-style-black.svg" loading="lazy" alt="Black Badge">
           </a>
