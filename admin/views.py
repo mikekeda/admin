@@ -24,8 +24,6 @@ from admin.settings import (
 )
 from admin.utils import (
     api_authentication,
-    check_black_status,
-    check_security_headers,
     check_supervisor_status,
     get_log_files,
     get_process_name,
@@ -122,7 +120,6 @@ async def site_page(request, repo_name: str):
             site_status,
             supervisor_statuses,
             requirements_statuses,
-            security_headers_grade,
         ) = await asyncio.gather(
             ex(
                 select(Metric)
@@ -149,7 +146,6 @@ async def site_page(request, repo_name: str):
                 *[check_supervisor_status(process) for process in processes]
             ),
             get_requirements_statuses(site.title),
-            check_security_headers(site.url, _session),
         )
 
     builds = builds.fetchall()[::-1]
@@ -189,7 +185,6 @@ async def site_page(request, repo_name: str):
         sites=sites,
         requirements_statuses=requirements_statuses,
         is_black=is_black,
-        security_headers_grade=security_headers_grade,
     )
 
 
@@ -200,16 +195,6 @@ async def site_api(_, url: str):
     async with ClientSession() as _session:
         status = await get_site_status(url, _session)
     return response.json(status)
-
-
-@app.route("/api/security_headers_check/<url>", methods=["GET"])
-@login_required()
-async def security_headers_api(_, url: str):
-    url = unquote(url)
-    async with ClientSession() as _session:
-        security_headers = await check_security_headers(url, _session)
-
-    return response.json(security_headers)
 
 
 @app.route("/api/available_updates/<site>", methods=["GET"])

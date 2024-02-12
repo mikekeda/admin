@@ -40,11 +40,9 @@
             <img src="{{ STATIC_URL }}img/code-style-black.svg" alt="Black Badge">
         </a>
         {% endif %}
-        {% if security_headers_grade %}
         <a href="https://securityheaders.com/?hide=on&q={{ site.url }}" target="_blank" rel="noopener">
-            {{ security_headers_grade }}
+            <i class="material-icons">link</i>
         </a>
-        {% endif %}
 
         {% for log_file, status in logs %}
         <a href="/sites/{{ site.title }}/{{ log_file }}" class="{% if status == 'RUNNING' %}green{% else %}red{% endif %}-text" title="{{ status }}">

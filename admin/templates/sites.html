@@ -125,19 +125,7 @@
         <td>
           <a class="security-headers-grade" data-site="{{ repo.url }}"
              href="https://securityheaders.com/?hide=on&q={{ repo.url }}" rel="noopener" target="_blank">
-            <div class="preloader-wrapper xsmall active">
-              <div class="spinner-layer spinner-green-only">
-                <div class="circle-clipper left">
-                  <div class="circle"></div>
-                </div>
-                <div class="gap-patch">
-                  <div class="circle"></div>
-                </div>
-                <div class="circle-clipper right">
-                  <div class="circle"></div>
-                </div>
-              </div>
-            </div>
+            <i class="material-icons">link</i>
           </a>
         </td>
       </tr>
@@ -214,14 +202,6 @@
                     a_classes = tr.querySelector('td:nth-child(3) a').querySelector('div').classList;
                     a_classes.remove("grey");
                     a_classes.add(data === 200 ? "green" : "red");
-                })
-                .catch(error => console.log(error));
-
-            // Check security headers grade.
-            fetch(urlPrefix + "/security_headers_check/" + encodeURIComponent(tr.querySelector('a.security-headers-grade').dataset.site))
-                .then(response => getResponse(response))
-                .then(data => {
-                    tr.querySelector('a.security-headers-grade').innerHTML = data;
                 })
                 .catch(error => console.log(error));
         });

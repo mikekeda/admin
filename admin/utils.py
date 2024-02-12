@@ -152,14 +152,6 @@ async def check_black_status(site: str) -> bool:
     return "All done!" in stderr.decode()
 
 
-@cached(ttl=86400, args_slice=1)
-async def check_security_headers(url: str, _session: ClientSession) -> str:
-    """Return security headers grade."""
-    url = f"https://securityheaders.com/?hide=on&q={url}"
-    async with _session.get(url) as resp:
-        return resp.headers.get("X-Grade", "")
-
-
 def get_log_files(
     repo: Row, process_statuses: dict[str, str]
 ) -> Iterator[tuple[str, str]]:
@@ -359,9 +351,11 @@ async def update_requirements_txt(
                         "==".join(
                             [
                                 package,
-                                new_version
-                                if (packages is None or package in packages)
-                                else current_version,
+                                (
+                                    new_version
+                                    if (packages is None or package in packages)
+                                    else current_version
+                                ),
                             ]
                         )
                         if new_version
@@ -461,9 +455,11 @@ async def save_build_info(
                     )
                     .values(
                         status=status,
-                        finished=datetime.utcnow()
-                        if status in {"SUCCESS", "FAILURE", "ABORTED"}
-                        else None,
+                        finished=(
+                            datetime.utcnow()
+                            if status in {"SUCCESS", "FAILURE", "ABORTED"}
+                            else None
+                        ),
                         **values,
                     )
                     .returning(JenkinsBuild.id)
