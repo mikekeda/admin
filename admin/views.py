@@ -15,7 +15,7 @@ from sqlalchemy import and_, select
 
 from admin.app import app, jinja
 from admin.forms import LoginForm
-from admin.models import Metric, Repo, JenkinsBuild, authenticate
+from admin.models import Metric, Repo, JenkinsBuild, BuildStatus, authenticate
 from admin.settings import (
     LOGIN_REDIRECT_URL,
     LOGOUT_REDIRECT_URL,
@@ -56,7 +56,8 @@ class HomePageView(HTTPMethodView):
         last_successful_builds = {}
         for row in rows:
             builds[row.site_id].append(row)
-            if row.status == "SUCCESS":
+            print(row.status)
+            if row.status == BuildStatus.SUCCESS:
                 last_successful_builds[row.site_id] = row
 
         # Collect processes names.
