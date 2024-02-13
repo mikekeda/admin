@@ -284,12 +284,14 @@ async def metric_page(request):
     ping_dict = defaultdict(lambda: defaultdict(int))
     status_dict = defaultdict(lambda: defaultdict(int))
     metrics = await ex(
-        select(Metric).where(
+        select(Metric)
+        .where(
             and_(
                 Metric.timestamp > datetime.now() - timedelta(days=1),
                 Metric.site.in_(site_ids),
             )
         )
+        .order_by(Metric.timestamp)
     )
     for m in metrics:
         timestamp = m.timestamp.isoformat(timespec="minutes")
