@@ -57,7 +57,6 @@ class HomePageView(HTTPMethodView):
         last_successful_builds = {}
         for row in rows:
             builds[row.site_id].append(row)
-            print(row.status)
             if row.status == BuildStatus.SUCCESS:
                 last_successful_builds[row.site_id] = row
 
