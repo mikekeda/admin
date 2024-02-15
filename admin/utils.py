@@ -300,18 +300,13 @@ def api_authentication():
     return decorator
 
 
-def update_remote(folder_name: str, updated_packages: list[str]) -> None:
+def update_remote(
+    folder_name: str, changed_files: list[str], commit_message: str
+) -> None:
     """Push local changes to the remote repositories."""
-    updated_packages = ", ".join(updated_packages)
-    updated_packages = (
-        updated_packages
-        if len(updated_packages) <= 69
-        else updated_packages[:69] + "..."
-    )
-
     repo = git.Repo(folder_name)
-    repo.index.add(["requirements.txt", "requirements-dev.txt"])
-    repo.index.commit(f"Updated requirements.txt (automatically)\n{updated_packages}")
+    repo.index.add(changed_files)
+    repo.index.commit(commit_message)
     repo.remotes.origin.push("master")
     repo.remotes.github.push("master")
 
@@ -386,7 +381,18 @@ async def update_requirements(repo_name: str, packages: set[str] = None) -> None
 
     folder_name = repo_to_folder(repo_name)
     updated_packages = await update_requirements_txt(packages, folder_name)
-    update_remote(folder_name, updated_packages)
+
+    updated_packages = ", ".join(updated_packages)
+    updated_packages = (
+        updated_packages
+        if len(updated_packages) <= 69
+        else updated_packages[:69] + "..."
+    )
+    commit_message = f"Updated requirements.txt (automatically)\n{updated_packages}"
+
+    update_remote(
+        folder_name, ["requirements.txt", "requirements-dev.txt"], commit_message
+    )
 
 
 async def make_code_black(repo_name: str) -> None:
@@ -398,8 +404,16 @@ async def make_code_black(repo_name: str) -> None:
         stderr=asyncio.subprocess.PIPE,
     )
     _, stderr = await proc.communicate()
-    if stderr:
+
+    if "All done!" not in stderr.decode():
         logger.warning("Error making code black: " + stderr.decode())
+        return None
+
+    changed_files = []
+    for line in stderr.decode().split("\n"):
+        if line.startswith("reformatted "):
+            changed_files.append(line.lstrip("reformatted "))
+    update_remote(folder, changed_files, "Made code black (automatically)")
 
 
 async def save_build_info(
