@@ -369,10 +369,9 @@ async def update_requirements_txt(
     return updated_packages
 
 
-async def update_requirements(repo_name: str, packages: set[str] = None) -> None:
-    """Update requirements for the given repository."""
-
-    folder_name = get_env_var("REPO_PREFIX") + (
+def repo_to_folder(repo_name: str) -> str:
+    """Convert repository name to folder name."""
+    return get_env_var("REPO_PREFIX") + (
         repo_name.replace("%20", " ")
         .lower()
         .replace("-", "_")
@@ -381,8 +380,26 @@ async def update_requirements(repo_name: str, packages: set[str] = None) -> None
         .replace(".", "")
     )
 
+
+async def update_requirements(repo_name: str, packages: set[str] = None) -> None:
+    """Update requirements for the given repository."""
+
+    folder_name = repo_to_folder(repo_name)
     updated_packages = await update_requirements_txt(packages, folder_name)
     update_remote(folder_name, updated_packages)
+
+
+async def make_code_black(repo_name: str) -> None:
+    """Make code black for the given repository."""
+    folder = repo_to_folder(repo_name)
+    proc = await asyncio.create_subprocess_shell(
+        f'cd {quote(folder)} && black . --exclude "(migrations|alembic|node_modules)"',
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await proc.communicate()
+    if stderr:
+        logger.warning("Error making code black: " + stderr.decode())
 
 
 async def save_build_info(

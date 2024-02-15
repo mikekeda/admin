@@ -27,6 +27,7 @@
         <th class="no-br-radius white-text">pylint</th>
         <th class="no-br-radius white-text">Coverage</th>
         <th class="no-br-radius white-text">Builds</th>
+        <th class="no-br-radius white-text">Black</th>
         <th class="no-br-radius white-text">Badges</th>
         <th class="no-br-radius white-text" title="Security headers grade">Headers</th>
       </tr>
@@ -37,7 +38,7 @@
       <tr data-site="{{ repo.title }}">
         <td>
           <label class="hide">
-            <input type="checkbox" name="{{ repo.title }}" disabled="disabled"/>
+            <input type="checkbox" name="backend__{{ repo.title }}" disabled="disabled"/>
             <span></span>
           </label>
           <div class="preloader-wrapper xsmall active">
@@ -56,7 +57,7 @@
         </td>
         <td>
           <label class="hide">
-            <input type="checkbox" name="frontend-{{ repo.title }}" disabled="disabled"/>
+            <input type="checkbox" name="frontend__{{ repo.title }}" disabled="disabled"/>
             <span></span>
           </label>
           <div class="preloader-wrapper xsmall active">
@@ -108,17 +109,24 @@
           {% endfor %}
         </td>
         <td>
+          {% if metric.black_status %}
+          <a href="https://github.com/mikekeda/{{ repo.name }}" class="black-status" target="_blank" rel="noopener">
+            <img src="{{ STATIC_URL }}img/code-style-black.svg" loading="lazy" alt="Black Badge">
+          </a>
+          {% else %}
+          <label>
+            <input type="checkbox" name="black__{{ repo.title }}"/>
+            <span></span>
+          </label>
+          {% endif %}
+        </td>
+        <td>
           <a href="https://app.codacy.com/gh/mikekeda/{{ repo.name }}/dashboard" target="_blank" rel="noopener">
             <img src="{{ repo.codacy }}" alt="Codacy Badge" loading="lazy">
           </a>
           {% if repo.coverage %}
           <a href="https://app.codacy.com/gh/mikekeda/{{ repo.name }}/dashboard" target="_blank" rel="noopener">
             <img src="{{ repo.coverage }}" alt="Coverage Badge" loading="lazy">
-          </a>
-          {% endif %}
-          {% if metric.black_status %}
-          <a href="https://github.com/mikekeda/{{ repo.name }}" class="black-status" target="_blank" rel="noopener">
-            <img src="{{ STATIC_URL }}img/code-style-black.svg" loading="lazy" alt="Black Badge">
           </a>
           {% endif %}
         </td>
