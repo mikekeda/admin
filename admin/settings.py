@@ -54,6 +54,7 @@ CELERY_accept_content = ["application/json"]
 CELERY_task_serializer = "json"
 CELERY_result_serializer = "json"
 CELERY_timezone = "UTC"
+CELERY_broker_connection_retry_on_startup = True
 
 EMAIL_CONFIG = {
     "host": "smtp.mailgun.org",
