@@ -416,6 +416,27 @@ async def make_code_black(repo_name: str) -> None:
     update_remote(folder, changed_files, "Made code black (automatically)")
 
 
+async def update_frontend(repo_name: str) -> None:
+    """Update frontend for the given repository."""
+    folder = repo_to_folder(repo_name)
+    proc = await asyncio.create_subprocess_shell(
+        f"cd {quote(folder)}/static && npm update",
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await proc.communicate()
+
+    if "changed " not in stderr.decode():
+        logger.warning("Error updating frontend: " + stderr.decode())
+        return None
+
+    update_remote(
+        folder,
+        ["static/package.json", "static/package-lock.json", "static/node_modules"],
+        "Updated frontend (automatically)",
+    )
+
+
 async def save_build_info(
     engine: AsyncEngine, jenkins_site: str, build_number: int, status: str
 ) -> None:

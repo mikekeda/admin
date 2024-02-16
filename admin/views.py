@@ -33,6 +33,7 @@ from admin.utils import (
     login_required,
     logout,
     make_code_black,
+    update_frontend,
     save_build_info,
     view_login_required,
     update_requirements,
@@ -100,12 +101,15 @@ class HomePageView(HTTPMethodView):
         backend_update = [
             k.lstrip("backend__") for k in request.form if "backend__" in k
         ]
-        # frontend_update = [k.lstrip("frontend__") for k in request.form if "frontend__" in k]
+        frontend_update = [
+            k.lstrip("frontend__") for k in request.form if "frontend__" in k
+        ]
         black_update = [k.lstrip("black__") for k in request.form if "black__" in k]
 
         await asyncio.gather(
             *[update_requirements(repo) for repo in backend_update],
             *[make_code_black(repo) for repo in black_update],
+            *[update_frontend(repo) for repo in frontend_update],
         )
 
         return response.redirect("/")
