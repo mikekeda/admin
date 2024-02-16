@@ -424,9 +424,9 @@ async def update_frontend(repo_name: str) -> None:
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    _, stderr = await proc.communicate()
+    stdout, stderr = await proc.communicate()
 
-    if "changed " not in stderr.decode():
+    if "changed " not in stdout.decode():
         logger.warning("Error updating frontend: " + stderr.decode())
         return None
 
