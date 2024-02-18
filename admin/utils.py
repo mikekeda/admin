@@ -306,6 +306,7 @@ def update_remote(
     """Push local changes to the remote repositories."""
     repo = git.Repo(folder_name)
     repo.index.add(changed_files)
+    repo.git.add(changed_files, update=True)
     repo.index.commit(commit_message)
     repo.remotes.origin.push("master")
     repo.remotes.github.push("master")
@@ -420,7 +421,7 @@ async def update_frontend(repo_name: str) -> None:
     """Update frontend for the given repository."""
     folder = repo_to_folder(repo_name)
     proc = await asyncio.create_subprocess_shell(
-        f"cd {quote(folder)}/static && npm update",
+        f"cd {quote(folder)}/static && npm update --save",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
