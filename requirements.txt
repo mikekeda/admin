@@ -8,13 +8,13 @@ black==24.2.0
 celery==5.3.6
 GitPython==3.1.42
 greenlet==3.0.3
-msgpack==1.0.7
+msgpack==1.0.8
 sanic==23.12.1
-redis==5.0.1
+redis==5.0.2
 requests==2.31.0
 sanic_session==0.8.0
 sanic-jinja2==2022.11.11
-sqlalchemy==2.0.27
+sqlalchemy==2.0.28
 bcrypt==4.1.2
 WTForms==3.1.2
 Sanic-WTF==0.7.0
