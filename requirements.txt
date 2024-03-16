@@ -4,13 +4,13 @@ aioredis==2.0.1
 aiocache==0.12.2
 alembic==1.13.1
 asyncpg==0.29.0
-black==24.2.0
+black==24.3.0
 celery==5.3.6
 GitPython==3.1.42
 greenlet==3.0.3
 msgpack==1.0.8
 sanic==23.12.1
-redis==5.0.2
+redis==5.0.3
 requests==2.31.0
 sanic_session==0.8.0
 sanic-jinja2==2022.11.11
