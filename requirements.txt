@@ -9,7 +9,7 @@ celery==5.4.0
 GitPython==3.1.43
 greenlet==3.0.3
 msgpack==1.0.8
-sanic==23.12.1
+sanic==24.6.0
 redis==5.0.7
 requests==2.32.3
 sanic_session==0.8.0
