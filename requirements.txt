@@ -1,5 +1,5 @@
 aiofiles==24.1.0
-aiohttp==3.11.2
+aiohttp==3.11.7
 aioredis==2.0.1
 aiocache==0.12.3
 alembic==1.14.0
@@ -15,7 +15,7 @@ requests==2.32.3
 sanic_session==0.8.0
 sanic-jinja2==2022.11.11
 sqlalchemy==2.0.36
-bcrypt==4.2.0
+bcrypt==4.2.1
 WTForms==3.2.1
 Sanic-WTF==0.7.0
 psycopg2-binary==2.9.10
