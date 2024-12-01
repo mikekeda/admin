@@ -1,4 +1,4 @@
-import aioredis
+from redis import asyncio as aioredis
 from sanic import Sanic, response
 from sanic.log import logger
 from sanic.request import Request

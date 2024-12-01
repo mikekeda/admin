@@ -428,7 +428,7 @@ async def update_frontend(repo_name: str) -> None:
     stdout, stderr = await proc.communicate()
 
     if "changed " not in stdout.decode():
-        logger.warning("Error updating frontend: " + stderr.decode())
+        logger.warning("Error updating frontend: " + stderr.decode() or stdout.decode())
         return None
 
     update_remote(
