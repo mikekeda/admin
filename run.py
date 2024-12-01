@@ -22,7 +22,7 @@ if __name__ == "__main__":
                 sock.bind(app.config["SOCKET_FILE"])
 
                 os.chmod(app.config["SOCKET_FILE"], 0o775)
-                os.chown(app.config["SOCKET_FILE"], -1, grp.getgrnam("nginx").gr_gid)
+                os.chown(app.config["SOCKET_FILE"], -1, grp.getgrnam("www-data").gr_gid)
 
                 app.run(sock=sock, access_log=False)
             except OSError as e:
