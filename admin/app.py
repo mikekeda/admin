@@ -3,7 +3,8 @@ from sanic import Sanic, response
 from sanic.log import logger
 from sanic.request import Request
 from sanic_jinja2 import SanicJinja2
-from sanic_session import AIORedisSessionInterface, Session
+from sanic_session import Session
+from sanic_session.base import BaseSessionInterface
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from admin.settings import DEBUG, SANIC_CONFIG, SERVER_IP
@@ -21,6 +22,44 @@ jinja.env.globals["STATIC_URL"] = (
 jinja.env.globals["SERVER_IP"] = SERVER_IP
 
 session = Session()
+
+class RedisSessionInterface(BaseSessionInterface):
+    def __init__(
+        self,
+        redis,
+        domain: str = None,
+        expiry: int = 2592000,
+        httponly: bool = True,
+        cookie_name: str = "session",
+        prefix: str = "session:",
+        sessioncookie: bool = False,
+        samesite: str = None,
+        session_name: str = "session",
+        secure: bool = False,
+    ):
+
+        self.redis = redis
+
+        super().__init__(
+            expiry=expiry,
+            prefix=prefix,
+            cookie_name=cookie_name,
+            domain=domain,
+            httponly=httponly,
+            sessioncookie=sessioncookie,
+            samesite=samesite,
+            session_name=session_name,
+            secure=secure,
+        )
+
+    async def _get_value(self, prefix, sid):
+        return await self.redis.get(self.prefix + sid)
+
+    async def _delete_key(self, key):
+        await self.redis.delete(key)
+
+    async def _set_value(self, key, data):
+        await self.redis.setex(key, self.expiry, data)
 
 
 @app.listener("before_server_start")
@@ -40,7 +79,7 @@ async def init_cache(_app: Sanic, _) -> None:
     # Pass the getter method for the connection pool into the session.
     session.init_app(
         _app,
-        interface=AIORedisSessionInterface(
+        interface=RedisSessionInterface(
             _app.ctx.redis,
             samesite="Strict",
             secure=not _app.config["DEBUG"],
