@@ -52,6 +52,10 @@ class RedisSessionInterface(BaseSessionInterface):
             secure=secure,
         )
 
+    @staticmethod
+    def __get_request_container(request):
+        return request.ctx.__dict__ if hasattr(request, "ctx") else request
+
     async def _get_value(self, prefix, sid):
         return await self.redis.get(self.prefix + sid)
 
@@ -60,6 +64,29 @@ class RedisSessionInterface(BaseSessionInterface):
 
     async def _set_value(self, key, data):
         await self.redis.setex(key, self.expiry, data)
+
+    def _set_cookie_props(self, request, response):
+        req = self.__get_request_container(request)
+        cookie = response.add_cookie(
+            self.cookie_name,
+            req[self.session_name].sid,
+            httponly=self.httponly,
+            secure=False
+        )
+
+        # Set expires and max-age unless we are using session cookies
+        if not self.sessioncookie:
+            cookie.expires = self._calculate_expires(self.expiry)
+            cookie.max_age = self.expiry
+
+        if self.domain:
+            cookie.domain = self.domain
+
+        if self.samesite is not None:
+            cookie.samesite = self.samesite
+
+        if self.secure:
+            cookie.secure = True
 
 
 @app.listener("before_server_start")

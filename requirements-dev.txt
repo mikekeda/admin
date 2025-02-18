@@ -1,5 +1,5 @@
-coverage==7.6.7
-pytest==8.3.3
+coverage==7.6.12
+pytest==8.3.4
 pytest-cov==6.0.0
 pytest-sanic==1.9.1
 sanic-testing==24.6.0
