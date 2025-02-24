@@ -264,7 +264,7 @@ async def update_requirements_api(request, repo_name: str):
 @login_required()
 async def log_page(request, repo_name: str, file_name: str):
     """View site logs."""
-
+    repo_name = repo_name.replace("%20", " ")
     if not file_name.endswith(".log") or not re.match("^[a-zA-Z- ]*$", repo_name):
         raise SanicException("Bad file name", 403)
 
