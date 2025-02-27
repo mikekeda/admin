@@ -449,7 +449,7 @@ async def save_build_info(
         # Get test_coverage.
         test_coverage = (
             ElementTree.parse(
-                f"{JENKINS_HOME}/workspace/{jenkins_site}/report/coverage.xml"
+                f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/coverage.xml"
             )
             .getroot()
             .get("line-rate")
@@ -467,7 +467,7 @@ async def save_build_info(
         # Get pylint violations
         violation_regex = re.compile(r'^[^*].+:\d+:\d+: [CRWEF]\d{4}:')
         with open(
-            f"{JENKINS_HOME}/workspace/{jenkins_site}/report/pylint.report"
+            f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/pylint.report"
             "r",
         ) as f:
             for line in f:
@@ -476,7 +476,7 @@ async def save_build_info(
 
         # Get pep8_violations
         with open(
-            f"{JENKINS_HOME}/workspace/{jenkins_site}/report/pep8.report"
+            f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/pep8.report"
             "r",
         ) as f:
             for _ in f:
