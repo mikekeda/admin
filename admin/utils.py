@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import uuid
 from datetime import datetime
 from functools import cache, wraps
@@ -448,7 +449,7 @@ async def save_build_info(
         # Get test_coverage.
         test_coverage = (
             ElementTree.parse(
-                f"{JENKINS_HOME}/jobs/{jenkins_site}/builds/{build_number}/coverage.xml"
+                f"{JENKINS_HOME}/workspace/{jenkins_site}/report/coverage.xml"
             )
             .getroot()
             .get("line-rate")
@@ -463,13 +464,23 @@ async def save_build_info(
             "commit_message": "",
         }
 
-        # Get pep8_violations, pylint_violations.
-        root = ElementTree.parse(
-            f"{JENKINS_HOME}/jobs/{jenkins_site}/builds/{build_number}/violations/violations.xml"
-        ).getroot()
-        for t in root:
-            for f in t:
-                values[f"{t.get('name')}_violations"] += int(f.get("count"))
+        # Get pylint violations
+        violation_regex = re.compile(r'^[^*].+:\d+:\d+: [CRWEF]\d{4}:')
+        with open(
+            f"{JENKINS_HOME}/workspace/{jenkins_site}/report/pylint.report"
+            "r",
+        ) as f:
+            for line in f:
+                if violation_regex.match(line):
+                    values["pylint_violations"] += 1
+
+        # Get pep8_violations
+        with open(
+            f"{JENKINS_HOME}/workspace/{jenkins_site}/report/pep8.report"
+            "r",
+        ) as f:
+            for _ in f:
+                values["pep8_violations"] += 1
 
         # Get commit, commit_message.
         with open(
