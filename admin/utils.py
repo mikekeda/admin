@@ -309,8 +309,8 @@ def update_remote(
     repo.index.add(changed_files)
     repo.git.add(changed_files, update=True)
     repo.index.commit(commit_message)
-    repo.remotes.origin.push("master")
-    repo.remotes.github.push("master")
+    repo.remotes.origin.push("main")
+    repo.remotes.github.push("main")
 
 
 async def update_requirements_txt(
