@@ -23,6 +23,7 @@ jinja.env.globals["SERVER_IP"] = SERVER_IP
 
 session = Session()
 
+
 class RedisSessionInterface(BaseSessionInterface):
     def __init__(
         self,
@@ -71,7 +72,7 @@ class RedisSessionInterface(BaseSessionInterface):
             self.cookie_name,
             req[self.session_name].sid,
             httponly=self.httponly,
-            secure=False
+            secure=False,
         )
 
         # Set expires and max-age unless we are using session cookies

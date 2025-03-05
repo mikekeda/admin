@@ -443,7 +443,6 @@ async def save_build_info(
     engine: AsyncEngine, jenkins_site: str, build_number: int, status: str
 ) -> None:
     """Save Jenkins build info."""
-    site = jenkins_site.replace("_", " ")
     values = {}
     if status == "SUCCESS":
         # Get test_coverage.
@@ -456,7 +455,7 @@ async def save_build_info(
         )
 
         values = {
-            "black_status": await check_black_status(site),
+            "black_status": await check_black_status(jenkins_site.lower()),
             "test_coverage": float(test_coverage),
             "pep8_violations": 0,
             "pylint_violations": 0,
@@ -465,7 +464,7 @@ async def save_build_info(
         }
 
         # Get pylint violations
-        violation_regex = re.compile(r'^[^*].+:\d+:\d+: [CRWEF]\d{4}:')
+        violation_regex = re.compile(r"^[^*].+:\d+:\d+: [CRWEF]\d{4}:")
         with open(
             f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/pylint.report",
             "r",
@@ -497,6 +496,7 @@ async def save_build_info(
                         values["commit_message"] = line[4:].strip()
 
     async with engine.connect() as conn:
+        site = jenkins_site.replace("_", " ")
         repo = (await conn.execute(select(Repo.id).where(Repo.title == site))).one()
 
         if status == "STARTED":
