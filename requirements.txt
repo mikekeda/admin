@@ -13,7 +13,7 @@ redis==5.2.1
 requests==2.32.3
 sanic_session==0.8.0
 sanic-jinja2==2022.11.11
-sqlalchemy==2.0.38
+sqlalchemy==2.0.39
 bcrypt==4.3.0
 WTForms==3.2.1
 Sanic-WTF==0.7.0
