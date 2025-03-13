@@ -93,17 +93,17 @@
           {{ python_version }}
         </td>
         <td>
-          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/" target="_blank">{{ metric.pep8_violations }}</a>
+          {{ metric.pep8_violations }}
         </td>
         <td>
-          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/violations/" target="_blank">{{ metric.pylint_violations }}</a>
+          {{ metric.pylint_violations }}
         </td>
         <td>
-          <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/{{ metric.number }}/cobertura/" target="_blank">{% if metric.test_coverage %}{{ metric.test_coverage|round(2) }}{% endif %}</a>
+          {% if metric.test_coverage %}{{ metric.test_coverage|round(2) }}{% endif %}
         </td>
         <td>
           {% for build in builds %}
-            <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title }}/{{ build.number }}/console" target="_blank">
+            <a href="http://{{ SERVER_IP }}:8181/job/{{ repo.title | replace(' ', '_') }}/{{ build.number }}/console" target="_blank">
               <div class="tooltipped status-dot {% if build.status.value == 'STARTED' %}grey{% elif build.status.value == 'SUCCESS' %}green{%else%}red{% endif %}" data-position="top" data-tooltip="{{ build.commit_message }}"></div>
             </a>
           {% endfor %}
