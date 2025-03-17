@@ -1,5 +1,5 @@
 aiofiles==24.1.0
-aiohttp==3.11.13
+aiohttp==3.11.14
 aiocache==0.12.3
 alembic==1.15.1
 asyncpg==0.30.0
