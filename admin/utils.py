@@ -446,13 +446,16 @@ async def save_build_info(
     values = {}
     if status == "SUCCESS":
         # Get test_coverage.
-        test_coverage = (
-            ElementTree.parse(
-                f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/coverage.xml"
+        try:
+            test_coverage = (
+                ElementTree.parse(
+                    f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/coverage.xml"
+                )
+                .getroot()
+                .get("line-rate")
             )
-            .getroot()
-            .get("line-rate")
-        )
+        except FileNotFoundError:
+            test_coverage = 0
 
         values = {
             "black_status": await check_black_status(jenkins_site.lower()),
