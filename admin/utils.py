@@ -388,7 +388,7 @@ async def update_requirements(repo_name: str, packages: set[str] = None) -> None
     updated_packages = (
         updated_packages
         if len(updated_packages) <= 69
-        else updated_packages[:69] + "..."
+        else updated_packages[:66] + "..."
     )
     commit_message = f"Updated requirements.txt (automatically)\n{updated_packages}"
 
