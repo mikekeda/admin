@@ -1,7 +1,7 @@
 aiofiles==24.1.0
 aiohttp==3.11.18
 aiocache==0.12.3
-alembic==1.15.2
+alembic==1.16.1
 asyncpg==0.30.0
 black==25.1.0
 celery==5.5.2
