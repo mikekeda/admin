@@ -5,7 +5,7 @@ alembic==1.16.4
 asyncpg==0.30.0
 black==25.1.0
 celery==5.5.3
-GitPython==3.1.44
+GitPython==3.1.45
 greenlet==3.2.3
 msgpack==1.1.1
 sanic==25.3.0
