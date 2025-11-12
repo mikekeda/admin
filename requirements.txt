@@ -3,7 +3,7 @@ aiohttp==3.13.2
 aiocache==0.12.3
 alembic==1.17.1
 asyncpg==0.30.0
-black==25.9.0
+black==25.11.0
 celery==5.5.3
 GitPython==3.1.45
 greenlet==3.2.4
