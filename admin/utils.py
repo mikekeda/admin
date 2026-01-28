@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import json
 import os
@@ -140,7 +138,7 @@ async def check_supervisor_status(process: str) -> str:
 
 
 @cached(ttl=300)
-async def check_black_status(site: str) -> bool:
+async def check_black_status(site: str) -> str:
     """Check if code is black."""
     folder = get_env_var("REPO_PREFIX") + get_process_name(site)
     proc = await asyncio.create_subprocess_shell(
@@ -150,7 +148,7 @@ async def check_black_status(site: str) -> bool:
     )
     _, stderr = await proc.communicate()
 
-    return "All done!" in stderr.decode()
+    return "" if "All done!" in stderr.decode() else stderr.decode()
 
 
 def get_log_files(

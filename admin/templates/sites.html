@@ -110,14 +110,14 @@
         </td>
         <td>
           {% if metric.black_status %}
+          <label>
+            <input type="checkbox" name="black__{{ repo.title }}" class="tooltipped" data-position="top" data-tooltip="{{ metric.black_status }}"/>
+            <span></span>
+          </label>
+          {% else %}
           <a href="https://github.com/mikekeda/{{ repo.name }}" class="black-status" target="_blank" rel="noopener">
             <img src="{{ STATIC_URL }}img/code-style-black.svg" loading="lazy" alt="Black Badge">
           </a>
-          {% else %}
-          <label>
-            <input type="checkbox" name="black__{{ repo.title }}"/>
-            <span></span>
-          </label>
           {% endif %}
         </td>
         <td>
