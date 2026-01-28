@@ -19,6 +19,7 @@ from sqlalchemy import (
     Enum,
     select,
     String,
+    Text,
     and_,
     or_,
     insert,
@@ -113,7 +114,7 @@ class JenkinsBuild(Base):
     status = Column(Enum(BuildStatus), nullable=False)
     started = Column(DateTime, nullable=False, default=datetime.datetime.utcnow)
     finished = Column(DateTime)
-    black_status = Column(Boolean)
+    black_status = Column(Text)
     test_coverage = Column(Float)
     pep8_violations = Column(Integer)
     pylint_violations = Column(Integer)
