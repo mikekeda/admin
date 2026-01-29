@@ -108,7 +108,7 @@
             </a>
           {% endfor %}
         </td>
-        <td {% if metric.black_status %}class="tooltipped" data-position="top" data-tooltip="{{ metric.black_status }}"{% endif %}>
+        <td {% if metric.black_status %}class="tooltipped" data-position="top" data-tooltip="{{ metric.black_status | replace('\n', '<br>') | safe }}"{% endif %}>
           {% if metric.black_status %}
           <label>
             <input type="checkbox" name="black__{{ repo.title }}"/>
