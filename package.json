@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:css": "node-sass -wr sass/style.scss -o static/css/ --output-style compressed",
+    "build:css": "sass sass/style.scss static/css/style.css -s compressed",
     "build:postcss": "postcss -wr static/css/ autoprefixer -b 'last 2 versions'",
     "start": "npm run build:css && npm run build:postcss"
   },
@@ -18,8 +18,8 @@
   "author": "Mike",
   "license": "BSD-2-Clause",
   "dependencies": {
-    "autoprefixer": "^9.8.6",
-    "node-sass": "^4.14.1",
-    "postcss-cli": "^6.1.3"
+    "autoprefixer": "^9.8.8",
+    "postcss-cli": "^6.1.3",
+    "sass": "^1.97.3"
   }
 }
