@@ -142,7 +142,7 @@ async def check_black_status(site: str) -> str:
     """Check if code is black."""
     folder = get_env_var("REPO_PREFIX") + get_process_name(site)
     proc = await asyncio.create_subprocess_shell(
-        f'cd {quote(folder)} && black --check . --exclude "(migrations|alembic|node_modules)"',
+        f'cd {quote(folder)} && black --check . --line-length 120 --exclude "(migrations|alembic|node_modules)"',
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
