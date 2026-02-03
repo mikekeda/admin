@@ -51,9 +51,7 @@ class HomePageView(HTTPMethodView):
         sites = (await ex(select(Repo).order_by(Repo.id))).fetchall()
 
         # Get Jenkins Builds.
-        rows = (
-            await ex(select(JenkinsBuild).order_by(JenkinsBuild.started))
-        ).fetchall()
+        rows = (await ex(select(JenkinsBuild).order_by(JenkinsBuild.started))).fetchall()
         builds = defaultdict(list)
         last_successful_builds = {}
         for row in rows:
@@ -73,9 +71,7 @@ class HomePageView(HTTPMethodView):
 
         # Check supervisor statuses.
         supervisor_statuses = await asyncio.gather(
-            *[  # check supervisor statuses
-                check_supervisor_status(process) for process in processes
-            ]
+            *[check_supervisor_status(process) for process in processes]  # check supervisor statuses
         )
 
         python_versions = [get_python_version(site.title) for site in sites]
@@ -98,12 +94,8 @@ class HomePageView(HTTPMethodView):
 
     # noinspection PyMethodMayBeStatic
     async def post(self, request):
-        backend_update = [
-            k.lstrip("backend__") for k in request.form if "backend__" in k
-        ]
-        frontend_update = [
-            k.lstrip("frontend__") for k in request.form if "frontend__" in k
-        ]
+        backend_update = [k.lstrip("backend__") for k in request.form if "backend__" in k]
+        frontend_update = [k.lstrip("frontend__") for k in request.form if "frontend__" in k]
         black_update = [k.lstrip("black__") for k in request.form if "black__" in k]
 
         await asyncio.gather(
@@ -128,8 +120,7 @@ async def site_page(request, repo_name: str):
     sites = [site.title for site in sites]
 
     processes = [
-        f"{get_process_name(site.title)}{['', '_celery', '_celerybeat'][i]}"
-        for i, _ in enumerate(site.processes)
+        f"{get_process_name(site.title)}{['', '_celery', '_celerybeat'][i]}" for i, _ in enumerate(site.processes)
     ]
 
     async with ClientSession() as _session:
@@ -161,9 +152,7 @@ async def site_page(request, repo_name: str):
                 .limit(10)
             ),
             get_site_status(site.url, _session),
-            asyncio.gather(  # check supervisor statuses
-                *[check_supervisor_status(process) for process in processes]
-            ),
+            asyncio.gather(*[check_supervisor_status(process) for process in processes]),  # check supervisor statuses
             get_requirements_statuses(site.title),
         )
 
@@ -239,13 +228,9 @@ async def available_frontend_updates_api(_, site: str):
 
 @app.route("/api/build/<site>/<build_number>/<status>", methods={"POST"})
 @api_authentication()
-async def build_api(
-    request, site: str, build_number: int, status: str
-) -> response.HTTPResponse:
+async def build_api(request, site: str, build_number: int, status: str) -> response.HTTPResponse:
     """Jenkins build status endpoint."""
-    asyncio.create_task(
-        save_build_info(request.app.ctx.engine, site, build_number, status)
-    )
+    asyncio.create_task(save_build_info(request.app.ctx.engine, site, build_number, status))
 
     return response.json({"status": "ok"}, 201)
 
@@ -289,9 +274,7 @@ async def log_page(request, repo_name: str, file_name: str):
 @login_required()
 async def metric_page(request):
     ex = request.ctx.conn.execute
-    sites = (
-        await ex(select(Repo).order_by(Repo.id).where(Repo.url.isnot(None)))
-    ).fetchall()
+    sites = (await ex(select(Repo).order_by(Repo.id).where(Repo.url.isnot(None)))).fetchall()
     site_ids = [s.id for s in sites]
 
     ping_dict = defaultdict(lambda: defaultdict(int))
@@ -311,18 +294,10 @@ async def metric_page(request):
         ping_dict[timestamp][m.site] = m.response_time.microseconds / 1000
         status_dict[timestamp][m.site] = m.status_code
 
-    pings = [
-        [timestamp] + [ping_dict[timestamp][site_id] for site_id in site_ids]
-        for timestamp in ping_dict
-    ]
-    statuses = [
-        [timestamp] + [status_dict[timestamp][site_id] for site_id in site_ids]
-        for timestamp in status_dict
-    ]
+    pings = [[timestamp] + [ping_dict[timestamp][site_id] for site_id in site_ids] for timestamp in ping_dict]
+    statuses = [[timestamp] + [status_dict[timestamp][site_id] for site_id in site_ids] for timestamp in status_dict]
 
-    return await jinja.render_async(
-        "metric.html", request, sites=sites, pings=pings, statuses=statuses
-    )
+    return await jinja.render_async("metric.html", request, sites=sites, pings=pings, statuses=statuses)
 
 
 @app.route("/logs")
@@ -342,9 +317,7 @@ async def logs_page(request):
 
     known_referees = set((get_env_var("KNOWN_REFEREES") or "").split(","))
 
-    async with aiofiles.open(
-        get_env_var("ACCESS_LOG"), "r", encoding="ISO-8859-1"
-    ) as f:
+    async with aiofiles.open(get_env_var("ACCESS_LOG"), "r", encoding="ISO-8859-1") as f:
         async for line in f:
             line = json.loads(line)
             if (
@@ -404,9 +377,7 @@ class LoginView(HTTPMethodView):
         form = LoginForm(request)
 
         if form.validate():
-            user = await authenticate(
-                request.ctx.conn, form.data["username"], form.data["password"]
-            )
+            user = await authenticate(request.ctx.conn, form.data["username"], form.data["password"])
             if user:
                 await login(request, user)
                 return response.redirect(LOGIN_REDIRECT_URL)

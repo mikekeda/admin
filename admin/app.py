@@ -16,9 +16,7 @@ app.static("/static", "./static")
 
 jinja = SanicJinja2(app, autoescape=True, enable_async=True)
 jinja.env.globals["any_in"] = any_in
-jinja.env.globals["STATIC_URL"] = (
-    "/static/" if DEBUG else "https://storage.googleapis.com/cdn.mkeda.me/admin/"
-)
+jinja.env.globals["STATIC_URL"] = "/static/" if DEBUG else "https://storage.googleapis.com/cdn.mkeda.me/admin/"
 jinja.env.globals["SERVER_IP"] = SERVER_IP
 
 session = Session()
@@ -100,9 +98,7 @@ async def init_cache(_app: Sanic, _) -> None:
         pool_size=5,
     )
 
-    _app.ctx.redis = await aioredis.Redis.from_url(
-        _app.config["redis"], decode_responses=True
-    )
+    _app.ctx.redis = await aioredis.Redis.from_url(_app.config["redis"], decode_responses=True)
 
     # Pass the getter method for the connection pool into the session.
     session.init_app(
@@ -138,9 +134,7 @@ async def on_response(request: Request, response) -> None:
 
 
 @app.exception(Exception)
-async def exception_handler(
-    request: Request, exception: Exception, **__
-) -> response.HTTPResponse:
+async def exception_handler(request: Request, exception: Exception, **__) -> response.HTTPResponse:
     """Exception handler returns error in json format."""
     status_code = getattr(exception, "status_code", 500)
     error = " ".join(str(arg) for arg in exception.args)

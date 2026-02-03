@@ -40,13 +40,9 @@ def hash_password(value: str) -> str:
     return hashpw(value.encode("utf-8"), SECRET_KEY.encode("utf-8")).decode("utf-8")
 
 
-async def authenticate(
-    conn: AsyncConnection, username: str, password: str
-) -> Optional[Row]:
+async def authenticate(conn: AsyncConnection, username: str, password: str) -> Optional[Row]:
     """If the given credentials are valid, return a User object."""
-    user = (
-        await conn.execute(select(User).where(User.username == username))
-    ).fetchone()
+    user = (await conn.execute(select(User).where(User.username == username))).fetchone()
     if user and user.password == hash_password(password):
         return user
 
@@ -144,9 +140,7 @@ class APIKey(Base):
         default=False,
         doc="If the API key is revoked, clients cannot use it anymore.",
     )
-    expiry_date = Column(
-        DateTime, doc="Once API key expires, clients cannot use it anymore."
-    )
+    expiry_date = Column(DateTime, doc="Once API key expires, clients cannot use it anymore.")
 
     user = relationship("User")
 
@@ -180,9 +174,7 @@ class APIKey(Base):
     @staticmethod
     def _get_secure_random_string(length) -> str:
         """Generate random string."""
-        secure_str = "".join(
-            (secrets.choice(string.ascii_letters) for _ in range(length))
-        )
+        secure_str = "".join((secrets.choice(string.ascii_letters) for _ in range(length)))
         return secure_str
 
     @classmethod

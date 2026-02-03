@@ -39,10 +39,7 @@ def cached(ttl: int = None, args_slice: int = None):
         async def decorated_function(*args, **kwargs):
             ordered_kwargs = sorted(kwargs.items())
             cache_key = (
-                (f.__module__ or "")
-                + f.__name__
-                + str(args[:args_slice] if args_slice else args)
-                + str(ordered_kwargs)
+                (f.__module__ or "") + f.__name__ + str(args[:args_slice] if args_slice else args) + str(ordered_kwargs)
             )
 
             async with app.ctx.redis.client() as conn:
@@ -151,9 +148,7 @@ async def check_black_status(site: str) -> str:
     return "" if "All done!" in stderr.decode() else stderr.decode()
 
 
-def get_log_files(
-    repo: Row, process_statuses: dict[str, str]
-) -> Iterator[tuple[str, str]]:
+def get_log_files(repo: Row, process_statuses: dict[str, str]) -> Iterator[tuple[str, str]]:
     """Return log file name with corresponding supervisor status."""
     if len(repo.processes) >= 1:
         yield "error.log", process_statuses[get_process_name(repo.title)]
@@ -165,9 +160,7 @@ def get_log_files(
 
 
 @cached(ttl=60, args_slice=1)
-async def get_pypi_version(
-    line: str, _session: ClientSession
-) -> tuple[str, Optional[str], Optional[str]]:
+async def get_pypi_version(line: str, _session: ClientSession) -> tuple[str, Optional[str], Optional[str]]:
     """Get the current and latest version for given package."""
 
     if "==" not in line:
@@ -205,10 +198,7 @@ async def get_npm_status(
         dependencies = content.get("dependencies", {})
         async with ClientSession() as _session:
             versions = await asyncio.gather(
-                *[
-                    get_npm_version(package, version.lstrip("^"), _session)
-                    for package, version in dependencies.items()
-                ]
+                *[get_npm_version(package, version.lstrip("^"), _session) for package, version in dependencies.items()]
             )
 
     if show_only_outdated:
@@ -229,9 +219,7 @@ async def get_requirements_status(
         requirements = await f.readlines()
 
     async with ClientSession() as _session:
-        versions = await asyncio.gather(
-            *[get_pypi_version(line.strip("\n"), _session) for line in requirements]
-        )
+        versions = await asyncio.gather(*[get_pypi_version(line.strip("\n"), _session) for line in requirements])
 
     if show_only_outdated:
         versions = [
@@ -259,9 +247,7 @@ async def get_requirements_statuses(
     requirements_statuses = {}
     if requirements_status and not issubclass(type(requirements_status), Exception):
         requirements_statuses["requirements.txt"] = requirements_status
-    if requirements_dev_status and not issubclass(
-        type(requirements_dev_status), Exception
-    ):
+    if requirements_dev_status and not issubclass(type(requirements_dev_status), Exception):
         requirements_statuses["requirements-dev.txt"] = requirements_dev_status
 
     return requirements_statuses
@@ -299,9 +285,7 @@ def api_authentication():
     return decorator
 
 
-def update_remote(
-    folder_name: str, changed_files: list[str], commit_message: str
-) -> None:
+def update_remote(folder_name: str, changed_files: list[str], commit_message: str) -> None:
     """Push local changes to the remote repositories."""
     repo = git.Repo(folder_name)
     repo.index.add(changed_files)
@@ -311,9 +295,7 @@ def update_remote(
     repo.remotes.github.push("main")
 
 
-async def update_requirements_txt(
-    packages: Optional[set[str]], folder_name: str
-) -> list[str]:
+async def update_requirements_txt(packages: Optional[set[str]], folder_name: str) -> list[str]:
     """Update requirements.txt and requirements-dev.txt."""
     updated_packages = []
 
@@ -333,9 +315,7 @@ async def update_requirements_txt(
             [
                 f"{package}: {current_version}->{new_version}"
                 for package, current_version, new_version in versions
-                if new_version
-                and new_version != current_version
-                and (packages is None or package in packages)
+                if new_version and new_version != current_version and (packages is None or package in packages)
             ]
         )
 
@@ -346,11 +326,7 @@ async def update_requirements_txt(
                         "==".join(
                             [
                                 package,
-                                (
-                                    new_version
-                                    if (packages is None or package in packages)
-                                    else current_version
-                                ),
+                                (new_version if (packages is None or package in packages) else current_version),
                             ]
                         )
                         if new_version
@@ -367,12 +343,7 @@ async def update_requirements_txt(
 def repo_to_folder(repo_name: str) -> str:
     """Convert repository name to folder name."""
     return get_env_var("REPO_PREFIX") + (
-        repo_name.replace("%20", " ")
-        .lower()
-        .replace("-", "_")
-        .replace(" ", "_")
-        .replace("/", "")
-        .replace(".", "")
+        repo_name.replace("%20", " ").lower().replace("-", "_").replace(" ", "_").replace("/", "").replace(".", "")
     )
 
 
@@ -383,16 +354,10 @@ async def update_requirements(repo_name: str, packages: set[str] = None) -> None
     updated_packages = await update_requirements_txt(packages, folder_name)
 
     updated_packages = ", ".join(updated_packages)
-    updated_packages = (
-        updated_packages
-        if len(updated_packages) <= 69
-        else updated_packages[:66] + "..."
-    )
+    updated_packages = updated_packages if len(updated_packages) <= 69 else updated_packages[:66] + "..."
     commit_message = f"Updated requirements.txt (automatically)\n{updated_packages}"
 
-    update_remote(
-        folder_name, ["requirements.txt", "requirements-dev.txt"], commit_message
-    )
+    update_remote(folder_name, ["requirements.txt", "requirements-dev.txt"], commit_message)
 
 
 async def make_code_black(repo_name: str) -> None:
@@ -437,18 +402,14 @@ async def update_frontend(repo_name: str) -> None:
     )
 
 
-async def save_build_info(
-    engine: AsyncEngine, jenkins_site: str, build_number: int, status: str
-) -> None:
+async def save_build_info(engine: AsyncEngine, jenkins_site: str, build_number: int, status: str) -> None:
     """Save Jenkins build info."""
     values = {}
     if status == "SUCCESS":
         # Get test_coverage.
         try:
             test_coverage = (
-                ElementTree.parse(
-                    f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/coverage.xml"
-                )
+                ElementTree.parse(f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/coverage.xml")
                 .getroot()
                 .get("line-rate")
             )
@@ -520,11 +481,7 @@ async def save_build_info(
                     )
                     .values(
                         status=status,
-                        finished=(
-                            datetime.utcnow()
-                            if status in {"SUCCESS", "FAILURE", "ABORTED"}
-                            else None
-                        ),
+                        finished=(datetime.utcnow() if status in {"SUCCESS", "FAILURE", "ABORTED"} else None),
                         **values,
                     )
                     .returning(JenkinsBuild.id)
