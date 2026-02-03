@@ -3,7 +3,7 @@ import json
 import os
 import re
 import uuid
-from datetime import datetime
+from datetime import datetime, UTC
 from functools import cache, wraps
 from shlex import quote
 from typing import Iterator, Optional, Iterable
@@ -457,6 +457,13 @@ async def save_build_info(engine: AsyncEngine, jenkins_site: str, build_number: 
                     else:
                         values["commit_message"] = line[4:].strip()
 
+                    # Trim commit message if needed
+                    values["commit_message"] = (
+                        values["commit_message"]
+                        if len(values["commit_message"]) <= 120
+                        else values["commit_message"][:117] + "..."
+                    )
+
     async with engine.connect() as conn:
         site = jenkins_site.replace("_", " ")
         repo = (await conn.execute(select(Repo.id).where(Repo.title == site))).one()
@@ -481,7 +488,7 @@ async def save_build_info(engine: AsyncEngine, jenkins_site: str, build_number: 
                     )
                     .values(
                         status=status,
-                        finished=(datetime.utcnow() if status in {"SUCCESS", "FAILURE", "ABORTED"} else None),
+                        finished=(datetime.now(UTC) if status in {"SUCCESS", "FAILURE", "ABORTED"} else None),
                         **values,
                     )
                     .returning(JenkinsBuild.id)

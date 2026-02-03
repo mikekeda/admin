@@ -1,5 +1,5 @@
 import smtplib
-from datetime import datetime
+from datetime import datetime, UTC
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -33,7 +33,7 @@ def send_email(site: Repo) -> None:
     html = jinja.env.get_template("_email_alert.html").render(
         site=site,
         title=title,
-        datetime=datetime.utcnow().strftime("%B %-d, %Y at %H:%M"),
+        datetime=datetime.now(UTC).strftime("%B %-d, %Y at %H:%M"),
     )
 
     msg.attach(MIMEText(text, "plain"))
