@@ -488,7 +488,7 @@ async def save_build_info(engine: AsyncEngine, jenkins_site: str, build_number: 
                     )
                     .values(
                         status=status,
-                        finished=(datetime.now(UTC) if status in {"SUCCESS", "FAILURE", "ABORTED"} else None),
+                        finished=(datetime.now() if status in {"SUCCESS", "FAILURE", "ABORTED"} else None),
                         **values,
                     )
                     .returning(JenkinsBuild.id)
