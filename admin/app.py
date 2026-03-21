@@ -16,8 +16,7 @@ app.static("/static", "./static")
 
 jinja = SanicJinja2(app, autoescape=True, enable_async=True)
 jinja.env.globals["any_in"] = any_in
-jinja.env.globals["STATIC_URL"] = "/static/" if DEBUG else "https://storage.googleapis.com/cdn.mkeda.me/admin/"
-jinja.env.globals["SERVER_IP"] = SERVER_IP
+jinja.env.globals["STATIC_URL"] = "/static/"
 
 session = Session()
 
