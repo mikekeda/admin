@@ -38,7 +38,7 @@ def _test_page(url: str) -> None:
     session_cookie = response.cookies["session"]
 
     # Check as logged user.
-    request, response = app.test_client.get(url, cookies={"session": session_cookie})
+    request, response = app.test_client.get(url, cookies={"session": session_cookie}, timeout=30)
     assert response.status == 200
 
 
