@@ -18,3 +18,4 @@ bcrypt==5.0.0
 WTForms==3.3.2
 Sanic-WTF==0.7.0
 psycopg2-binary==2.9.13
+psycopg==3.3.9
