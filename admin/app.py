@@ -97,7 +97,11 @@ async def init_cache(_app: Sanic, _) -> None:
         pool_size=5,
     )
 
-    _app.ctx.redis = await aioredis.Redis.from_url(_app.config["redis"], decode_responses=True)
+    # A blocking pool makes request bursts (one lookup per package per site) wait for a connection instead of failing.
+    pool = aioredis.BlockingConnectionPool.from_url(
+        _app.config["redis"], max_connections=50, timeout=20, decode_responses=True
+    )
+    _app.ctx.redis = aioredis.Redis.from_pool(pool)
 
     # Pass the getter method for the connection pool into the session.
     session.init_app(

@@ -438,16 +438,15 @@ async def make_code_black(repo_name: str) -> None:
         stderr=asyncio.subprocess.PIPE,
     )
     _, stderr = await proc.communicate()
+    lines = stderr.decode().splitlines()
 
-    if "All done!" not in stderr.decode():
-        logger.warning("Error making code black: " + stderr.decode())
-        return None
-
-    changed_files = []
-    for line in stderr.decode().split("\n"):
-        if line.startswith("reformatted "):
-            changed_files.append(line.removeprefix("reformatted "))
+    # Commit whatever black did reformat, so a partial run never leaves the deployed tree dirty.
+    changed_files = [line.removeprefix("reformatted ") for line in lines if line.startswith("reformatted ")]
     await asyncio.to_thread(update_remote, folder, changed_files, "Made code black (automatically)")
+
+    errors = [line for line in lines if line.startswith("error: ")]
+    if proc.returncode or errors:
+        raise RuntimeError(f"black failed for {repo_name}:\n" + "\n".join(errors or lines[-20:]))
 
 
 async def update_frontend(repo_name: str) -> None:

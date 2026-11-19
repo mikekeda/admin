@@ -261,3 +261,21 @@ def test_update_remote_raises_when_push_fails(tmp_path):
 
     with pytest.raises(git.GitCommandError):
         utils.update_remote(str(work), ["requirements.txt"], "msg")
+
+
+def test_make_code_black_commits_partial_results_and_raises(tmp_path, monkeypatch):
+    (tmp_path / "ugly.py").write_text("x = [1,\n  2]\n")
+    locked = tmp_path / "locked.py"
+    locked.write_text("y = ( 1 )\n")
+    locked.chmod(0o444)
+    committed = []
+
+    monkeypatch.setattr(utils, "repo_to_folder", lambda name: str(tmp_path))
+    monkeypatch.setattr(utils, "sync_with_remote", lambda folder: None)
+    monkeypatch.setattr(utils, "update_remote", lambda folder, files, message: committed.extend(files))
+
+    with pytest.raises(RuntimeError, match="locked.py"):
+        asyncio.run(utils.make_code_black("Demo"))
+
+    assert [os.path.basename(f) for f in committed] == ["ugly.py"]
+    assert (tmp_path / "ugly.py").read_text() == "x = [1, 2]\n"
