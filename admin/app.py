@@ -120,16 +120,22 @@ async def close_redis_connections(_app: Sanic, _) -> None:
 @app.middleware("request")
 async def on_request(request: Request) -> None:
     """Set user value for templates."""
-    request.ctx.conn = await request.app.ctx.engine.connect()
     await session.interface.open(request)
     request.ctx.user = request.ctx.session.get("user")
+    request.ctx.conn = await request.app.ctx.engine.connect()
 
 
 @app.middleware("response")
 async def on_response(request: Request, response) -> None:
-    await request.ctx.conn.commit()
-    await request.ctx.conn.close()
-    await session.interface.save(request, response)
+    # Either attribute is missing when on_request failed part-way; the connection must still go back to the pool.
+    conn = getattr(request.ctx, "conn", None)
+    if conn is not None:
+        try:
+            await conn.commit()
+        finally:
+            await conn.close()
+    if getattr(request.ctx, "session", None) is not None:
+        await session.interface.save(request, response)
 
 
 @app.exception(Exception)

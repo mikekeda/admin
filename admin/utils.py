@@ -10,7 +10,7 @@ from typing import Iterator, Optional, Iterable
 from xml.etree import ElementTree
 
 import aiofiles
-from aiohttp import ClientConnectorError, ClientSession
+from aiohttp import ClientConnectorError, ClientError, ClientSession
 import git
 from sanic.log import logger
 from sanic.request import Request
@@ -30,6 +30,13 @@ from admin.settings import (
     get_env_var,
 )
 
+REQUIREMENTS_FILES = ("requirements.txt", "requirements-dev.txt")
+# Only exact pins are auto-updated; extras stay on the line but are not part of the PyPI project name.
+REQUIREMENT_RE = re.compile(r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)(?P<extras>\[[^\]]*\])?==(?P<version>\S+)$")
+# Matches pylint's default ("f.py:1:0: C0114:") and parseable ("f.py:1: [C0114(...)") formats.
+PYLINT_VIOLATION_RE = re.compile(r"^(?!\.pylintrc:)[^*\s].*:\d+:(?:\d+:)? \[?[CRWEF]\d{4}\b")
+PEP8_VIOLATION_RE = re.compile(r"^.+:\d+:\d+: [EWC]\d{3} ")
+
 
 def cached(ttl: int = None, args_slice: int = None):
     """Cache decorator."""
@@ -42,13 +49,13 @@ def cached(ttl: int = None, args_slice: int = None):
                 (f.__module__ or "") + f.__name__ + str(args[:args_slice] if args_slice else args) + str(ordered_kwargs)
             )
 
-            async with app.ctx.redis.client() as conn:
-                value = await conn.get(cache_key)
-                if value:
-                    return json.loads(value)
+            # Pooled commands, not a dedicated client: holding a connection across f() exhausts the pool.
+            value = await app.ctx.redis.get(cache_key)
+            if value:
+                return json.loads(value)
 
-                value = await f(*args, **kwargs)
-                await conn.set(cache_key, json.dumps(value), ex=ttl)
+            value = await f(*args, **kwargs)
+            await app.ctx.redis.set(cache_key, json.dumps(value), ex=ttl)
 
             return value
 
@@ -163,19 +170,29 @@ def get_log_files(repo: Row, process_statuses: dict[str, str]) -> Iterator[tuple
 async def get_pypi_version(line: str, _session: ClientSession) -> tuple[str, Optional[str], Optional[str]]:
     """Get the current and latest version for given package."""
 
-    if "==" not in line:
+    match = REQUIREMENT_RE.match(line.strip())
+    if not match:
         return line, None, None
 
-    package, current_version = line.split("==")
-    url = f"https://pypi.python.org/pypi/{package}/json"
+    package = match["name"] + (match["extras"] or "")
+    current_version = match["version"]
+    url = f"https://pypi.org/pypi/{match['name']}/json"
     try:
         async with _session.get(url) as resp:
             new_version = (await resp.json())["info"]["version"]
-    except (ClientConnectorError, KeyError) as e:
+    except (ClientError, KeyError, ValueError) as e:
         logger.warning("Error getting pypi info for %s: %s", package, repr(e))
-        return line, current_version, None  # we were now able to get the latest version
+        return package, current_version, None
 
     return package, current_version, new_version
+
+
+def format_requirement(package: str, current_version: Optional[str], new_version: Optional[str]) -> str:
+    """Render a requirements line, bumping it to new_version when one is given."""
+    if current_version is None:
+        return package
+
+    return f"{package}=={new_version or current_version}"
 
 
 @cached(ttl=60, args_slice=1)
@@ -285,21 +302,54 @@ def api_authentication():
     return decorator
 
 
+def sync_with_remote(folder_name: str) -> None:
+    """Fast-forward the checkout to origin/main; raise GitCommandError if it has diverged."""
+    git.Repo(folder_name).remotes.origin.pull("main", ff_only=True)
+
+
 def update_remote(folder_name: str, changed_files: list[str], commit_message: str) -> None:
-    """Push local changes to the remote repositories."""
+    """Commit the changed files and push them to every remote; raise if any push fails."""
     repo = git.Repo(folder_name)
-    repo.index.add(changed_files)
-    repo.git.add(changed_files, update=True)
-    repo.index.commit(commit_message)
-    repo.remotes.origin.push("main")
-    repo.remotes.github.push("main")
+    # Missing untracked or ignored paths (e.g. an ignored package-lock.json) make `git add` fail.
+    paths = [p for p in changed_files if os.path.exists(os.path.join(folder_name, p)) or repo.git.ls_files("--", p)]
+    ignored = set(repo.ignored(*paths)) if paths else set()
+    paths = [p for p in paths if p not in ignored]
+    if not paths:
+        return  # `git add --all --` with no paths would stage the whole tree.
+
+    # The git CLI honours core.sharedRepository; GitPython's own object writer does not.
+    repo.git.add("--all", "--", *paths)
+    repo.git.commit("-m", commit_message)
+    for remote in repo.remotes:
+        remote.push("main").raise_if_error()
+
+
+async def check_requirements_installable(folder_name: str) -> None:
+    """Raise RuntimeError if the site's requirements files cannot be installed together."""
+    pip = f"{ENV_FOLDER}/{os.path.basename(folder_name)}/bin/pip"
+    requirement_args = [arg for file_name in REQUIREMENTS_FILES for arg in ("-r", file_name)]
+    proc = await asyncio.create_subprocess_exec(
+        pip,
+        "install",
+        "--dry-run",
+        "--quiet",
+        "--no-cache-dir",
+        "--disable-pip-version-check",
+        *requirement_args,
+        cwd=folder_name,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await proc.communicate()
+    if proc.returncode:
+        raise RuntimeError(f"Updated requirements for {folder_name} do not install:\n{stderr.decode()[-3000:]}")
 
 
 async def update_requirements_txt(packages: Optional[set[str]], folder_name: str) -> list[str]:
     """Update requirements.txt and requirements-dev.txt."""
     updated_packages = []
 
-    for file_name in ("requirements.txt", "requirements-dev.txt"):
+    for file_name in REQUIREMENTS_FILES:
         versions = await get_requirements_status(folder_name, file_name)
         logger.info(
             "Updating requirements for %s/%s: %s",
@@ -322,15 +372,10 @@ async def update_requirements_txt(packages: Optional[set[str]], folder_name: str
         async with aiofiles.open(f"{folder_name}/{file_name}", "w") as f:
             await f.writelines(
                 [
-                    (
-                        "==".join(
-                            [
-                                package,
-                                (new_version if (packages is None or package in packages) else current_version),
-                            ]
-                        )
-                        if new_version
-                        else package
+                    format_requirement(
+                        package,
+                        current_version,
+                        new_version if (packages is None or package in packages) else None,
                     )
                     + "\n"
                     for package, current_version, new_version in versions
@@ -351,18 +396,40 @@ async def update_requirements(repo_name: str, packages: set[str] = None) -> None
     """Update requirements for the given repository."""
 
     folder_name = repo_to_folder(repo_name)
+    await asyncio.to_thread(sync_with_remote, folder_name)
+
+    originals = {}
+    for file_name in REQUIREMENTS_FILES:
+        async with aiofiles.open(f"{folder_name}/{file_name}", "r") as f:
+            originals[file_name] = await f.read()
+
+    async def restore_originals() -> None:
+        for name, content in originals.items():
+            async with aiofiles.open(f"{folder_name}/{name}", "w") as out:
+                await out.write(content)
+
     updated_packages = await update_requirements_txt(packages, folder_name)
+    if not updated_packages:
+        await restore_originals()
+        return
+
+    try:
+        await check_requirements_installable(folder_name)
+    except Exception:
+        await restore_originals()
+        raise
 
     updated_packages = ", ".join(updated_packages)
     updated_packages = updated_packages if len(updated_packages) <= 69 else updated_packages[:66] + "..."
     commit_message = f"Updated requirements.txt (automatically)\n{updated_packages}"
 
-    update_remote(folder_name, ["requirements.txt", "requirements-dev.txt"], commit_message)
+    await asyncio.to_thread(update_remote, folder_name, list(REQUIREMENTS_FILES), commit_message)
 
 
 async def make_code_black(repo_name: str) -> None:
     """Make code black for the given repository."""
     folder = repo_to_folder(repo_name)
+    await asyncio.to_thread(sync_with_remote, folder)
     proc = await asyncio.create_subprocess_shell(
         f'cd {quote(folder)} && black . --exclude "(migrations|alembic|node_modules)"',
         stdout=asyncio.subprocess.PIPE,
@@ -377,13 +444,14 @@ async def make_code_black(repo_name: str) -> None:
     changed_files = []
     for line in stderr.decode().split("\n"):
         if line.startswith("reformatted "):
-            changed_files.append(line.lstrip("reformatted "))
-    update_remote(folder, changed_files, "Made code black (automatically)")
+            changed_files.append(line.removeprefix("reformatted "))
+    await asyncio.to_thread(update_remote, folder, changed_files, "Made code black (automatically)")
 
 
 async def update_frontend(repo_name: str) -> None:
     """Update frontend for the given repository."""
     folder = repo_to_folder(repo_name)
+    await asyncio.to_thread(sync_with_remote, folder)
     proc = await asyncio.create_subprocess_shell(
         f"cd {quote(folder)}/static && npm update --save",
         stdout=asyncio.subprocess.PIPE,
@@ -395,11 +463,17 @@ async def update_frontend(repo_name: str) -> None:
         logger.warning("Error updating frontend: " + stderr.decode() or stdout.decode())
         return None
 
-    update_remote(
+    await asyncio.to_thread(
+        update_remote,
         folder,
         ["static/package.json", "static/package-lock.json", "static/node_modules"],
         "Updated frontend (automatically)",
     )
+
+
+def count_matching_lines(lines: Iterable[str], pattern: re.Pattern) -> int:
+    """Count report lines that are real violations (tool errors such as 'not found' are skipped)."""
+    return sum(1 for line in lines if pattern.match(line))
 
 
 async def save_build_info(engine: AsyncEngine, jenkins_site: str, build_number: int, status: str) -> None:
@@ -425,23 +499,11 @@ async def save_build_info(engine: AsyncEngine, jenkins_site: str, build_number: 
             "commit_message": "",
         }
 
-        # Get pylint violations
-        violation_regex = re.compile(r"^[^*].+:\d+:\d+: [CRWEF]\d{4}:")
-        with open(
-            f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/pylint.report",
-            "r",
-        ) as f:
-            for line in f:
-                if violation_regex.match(line):
-                    values["pylint_violations"] += 1
+        with open(f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/pylint.report", "r") as f:
+            values["pylint_violations"] = count_matching_lines(f, PYLINT_VIOLATION_RE)
 
-        # Get pep8_violations
-        with open(
-            f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/pep8.report",
-            "r",
-        ) as f:
-            for _ in f:
-                values["pep8_violations"] += 1
+        with open(f"{JENKINS_HOME}/workspace/{jenkins_site}/reports/pep8.report", "r") as f:
+            values["pep8_violations"] = count_matching_lines(f, PEP8_VIOLATION_RE)
 
         # Get commit, commit_message.
         with open(

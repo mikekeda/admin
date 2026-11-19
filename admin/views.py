@@ -94,9 +94,9 @@ class HomePageView(HTTPMethodView):
 
     # noinspection PyMethodMayBeStatic
     async def post(self, request):
-        backend_update = [k.lstrip("backend__") for k in request.form if "backend__" in k]
-        frontend_update = [k.lstrip("frontend__") for k in request.form if "frontend__" in k]
-        black_update = [k.lstrip("black__") for k in request.form if "black__" in k]
+        backend_update = [k.removeprefix("backend__") for k in request.form if k.startswith("backend__")]
+        frontend_update = [k.removeprefix("frontend__") for k in request.form if k.startswith("frontend__")]
+        black_update = [k.removeprefix("black__") for k in request.form if k.startswith("black__")]
 
         await asyncio.gather(
             *[update_requirements(repo) for repo in backend_update],
