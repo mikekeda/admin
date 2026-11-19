@@ -36,6 +36,8 @@ REQUIREMENT_RE = re.compile(r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)(?P<extras>\[
 # Matches pylint's default ("f.py:1:0: C0114:") and parseable ("f.py:1: [C0114(...)") formats.
 PYLINT_VIOLATION_RE = re.compile(r"^(?!\.pylintrc:)[^*\s].*:\d+:(?:\d+:)? \[?[CRWEF]\d{4}\b")
 PEP8_VIOLATION_RE = re.compile(r"^.+:\d+:\d+: [EWC]\d{3} ")
+# Shared by the check and the "make black" action so they agree; matches the 120 used by pycodestyle in Jenkins.
+BLACK_OPTIONS = '--line-length 120 --extend-exclude "/(migrations|alembic|node_modules)/"'
 
 
 def cached(ttl: int = None, args_slice: int = None):
@@ -146,7 +148,7 @@ async def check_black_status(site: str) -> str:
     """Check if code is black."""
     folder = get_env_var("REPO_PREFIX") + get_process_name(site)
     proc = await asyncio.create_subprocess_shell(
-        f'cd {quote(folder)} && black --check . --line-length 120 --exclude "(migrations|alembic|node_modules)"',
+        f"cd {quote(folder)} && black --check . {BLACK_OPTIONS}",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -431,7 +433,7 @@ async def make_code_black(repo_name: str) -> None:
     folder = repo_to_folder(repo_name)
     await asyncio.to_thread(sync_with_remote, folder)
     proc = await asyncio.create_subprocess_shell(
-        f'cd {quote(folder)} && black . --exclude "(migrations|alembic|node_modules)"',
+        f"cd {quote(folder)} && black . {BLACK_OPTIONS}",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
