@@ -88,7 +88,7 @@ class RedisSessionInterface(BaseSessionInterface):
 
 
 @app.listener("before_server_start")
-async def init_cache(_app: Sanic, _) -> None:
+async def init_cache(_app: Sanic) -> None:
     """Initialize db connections, session_interface and cache."""
     _app.ctx.engine = create_async_engine(
         "postgresql+asyncpg://"
@@ -116,7 +116,7 @@ async def init_cache(_app: Sanic, _) -> None:
 
 
 @app.listener("after_server_stop")
-async def close_redis_connections(_app: Sanic, _) -> None:
+async def close_redis_connections(_app: Sanic) -> None:
     """Close db and redis connections."""
     await _app.ctx.redis.close()
 

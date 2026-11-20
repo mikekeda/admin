@@ -1,10 +1,24 @@
 import grp
+import logging
 import os
 import socket
 
 from sanic.log import logger
 
 from admin.views import app
+
+
+def log_to_stderr_with_timestamps() -> None:
+    """Give library log records and Python warnings the timestamped format Sanic uses for its own."""
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s", "%Y-%m-%d %H:%M:%S %z"))
+    handler.addFilter(lambda record: not record.name.startswith("sanic."))  # Sanic's loggers have their own handlers.
+    logging.getLogger().addHandler(handler)
+    logging.captureWarnings(True)
+
+
+# Module level, not under __main__: Sanic's worker process re-imports this file without running that block.
+log_to_stderr_with_timestamps()
 
 if __name__ == "__main__":
     if app.config["DEBUG"]:
