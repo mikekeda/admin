@@ -4,6 +4,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import requests
+from celery.utils.log import get_task_logger
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -12,12 +13,15 @@ from admin.celery import app
 from admin.models import Metric, Repo
 from admin.settings import EMAIL_CONFIG, SANIC_CONFIG
 
+SITE_CHECK_TIMEOUT = 30
+
 engine = create_engine(
     f"postgresql://{ SANIC_CONFIG['DB_USER'] }:{ SANIC_CONFIG['DB_PASSWORD'] }"
-    f"@{ SANIC_CONFIG['DB_HOST'] }/{ SANIC_CONFIG['DB_DATABASE'] }"
+    f"@{ SANIC_CONFIG['DB_HOST'] }/{ SANIC_CONFIG['DB_DATABASE'] }",
+    pool_pre_ping=True,
 )
 Session = sessionmaker(bind=engine)
-session = Session()
+logger = get_task_logger(__name__)
 
 
 def send_email(site: Repo) -> None:
@@ -39,7 +43,7 @@ def send_email(site: Repo) -> None:
     msg.attach(MIMEText(text, "plain"))
     msg.attach(MIMEText(html, "html"))
 
-    s = smtplib.SMTP(EMAIL_CONFIG["host"], EMAIL_CONFIG["port"])
+    s = smtplib.SMTP(EMAIL_CONFIG["host"], EMAIL_CONFIG["port"], timeout=SITE_CHECK_TIMEOUT)
 
     s.login(EMAIL_CONFIG["host_user"], EMAIL_CONFIG["host_password"])
     s.sendmail(msg["From"], msg["To"], msg.as_string())
@@ -48,22 +52,40 @@ def send_email(site: Repo) -> None:
 
 @app.task()
 def check_sites():
-    repos = session.query(Repo.__table__).all()
+    # A session per run: a long-lived one stays broken after a dropped connection and fails every later run.
+    with Session() as session:
+        repos = session.query(Repo.__table__).all()
+
     metrics = []
+    down = []
     for repo in repos:
-        if repo.url:
-            response = requests.get(repo.url)
-            metrics.append(
-                {
-                    "site": repo.id,
-                    "response_time": response.elapsed,
-                    "response_size": round(len(response.content) / 1024, 3),
-                    "status_code": response.status_code,
-                }
-            )
+        if not repo.url:
+            continue
+        try:
+            response = requests.get(repo.url, timeout=SITE_CHECK_TIMEOUT)
+        except requests.RequestException as e:
+            logger.warning("Uptime check failed for %s: %r", repo.title, e)
+            down.append(repo)
+            continue
 
-            if response.status_code != 200:
-                send_email(repo)
+        metrics.append(
+            {
+                "site": repo.id,
+                "response_time": response.elapsed,
+                "response_size": round(len(response.content) / 1024, 3),
+                "status_code": response.status_code,
+            }
+        )
+        if response.status_code != 200:
+            down.append(repo)
 
-    session.execute(Metric.__table__.insert(), metrics)
-    session.commit()
+    if metrics:
+        with Session.begin() as session:
+            session.execute(Metric.__table__.insert(), metrics)
+
+    # Metrics are saved first and each alert is sent on its own, so one mail failure loses nothing else.
+    for repo in down:
+        try:
+            send_email(repo)
+        except (smtplib.SMTPException, OSError) as e:
+            logger.error("Could not send the alert for %s: %r", repo.title, e)

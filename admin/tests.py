@@ -279,3 +279,98 @@ def test_make_code_black_commits_partial_results_and_raises(tmp_path, monkeypatc
 
     assert [os.path.basename(f) for f in committed] == ["ugly.py"]
     assert (tmp_path / "ugly.py").read_text() == "x = [1, 2]\n"
+
+
+class _FakeSession:
+    def __init__(self, repos, inserted):
+        self.repos, self.inserted = repos, inserted
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def query(self, _table):
+        return self
+
+    def all(self):
+        return self.repos
+
+    def execute(self, _statement, rows):
+        self.inserted.extend(rows)
+
+
+class _FakeSessionmaker:
+    def __init__(self, session):
+        self.session = session
+
+    def __call__(self):
+        return self.session
+
+    def begin(self):
+        return self.session
+
+
+def test_check_sites_survives_failures_and_saves_metrics(monkeypatch):
+    from types import SimpleNamespace
+    from datetime import timedelta
+    import requests
+    from admin import tasks
+
+    repos = [
+        SimpleNamespace(id=1, title="Up", url="https://up"),
+        SimpleNamespace(id=2, title="Refused", url="https://refused"),
+        SimpleNamespace(id=3, title="Broken", url="https://broken"),
+        SimpleNamespace(id=4, title="No url", url=None),
+    ]
+    inserted, alerted = [], []
+    session = _FakeSession(repos, inserted)
+    monkeypatch.setattr(tasks, "Session", _FakeSessionmaker(session))
+
+    def fake_get(url, timeout):
+        assert timeout == tasks.SITE_CHECK_TIMEOUT
+        if url == "https://refused":
+            raise requests.ConnectionError("refused")
+        status = 200 if url == "https://up" else 500
+        return SimpleNamespace(status_code=status, elapsed=timedelta(milliseconds=5), content=b"x" * 2048)
+
+    def fake_send_email(repo):
+        alerted.append(repo.title)
+        if repo.title == "Refused":
+            raise OSError("smtp down")
+
+    monkeypatch.setattr(tasks.requests, "get", fake_get)
+    monkeypatch.setattr(tasks, "send_email", fake_send_email)
+
+    tasks.check_sites()
+
+    assert [m["site"] for m in inserted] == [1, 3]
+    assert alerted == ["Refused", "Broken"]
+
+
+def test_api_authentication_does_not_log_in(monkeypatch):
+    from types import SimpleNamespace
+    from sanic_session.base import SessionDict
+
+    async def fake_authenticate(ex, token):
+        return SimpleNamespace(id=1, username="jenkins") if token == "good" else None
+
+    async def must_not_login(*args):
+        raise AssertionError("API calls must not create a UI session")
+
+    monkeypatch.setattr(utils.APIKey, "authenticate", fake_authenticate)
+    monkeypatch.setattr(utils, "login", must_not_login)
+
+    @utils.api_authentication()
+    async def endpoint(request):
+        return request.ctx.user
+
+    def make_request(token):
+        ctx = SimpleNamespace(conn=SimpleNamespace(execute=None), session=SessionDict(sid="s"))
+        return SimpleNamespace(headers={"Authorization": token}, ctx=ctx)
+
+    request = make_request("good")
+    assert asyncio.run(endpoint(request)) == {"id": 1, "username": "jenkins"}
+    assert not request.ctx.session and not request.ctx.session.modified
+    assert asyncio.run(endpoint(make_request("bad"))).status == 403

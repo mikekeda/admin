@@ -293,7 +293,8 @@ def api_authentication():
             user = await APIKey.authenticate(request.ctx.conn.execute, token)
 
             if user:
-                await login(request, user)
+                # Not login(): that would save a 30-day UI session for every API call.
+                request.ctx.user = {"id": user.id, "username": user.username}
                 return await f(request, *args, **kwargs)
 
             # User is not authorized.
