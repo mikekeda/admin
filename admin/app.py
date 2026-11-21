@@ -126,12 +126,17 @@ async def close_redis_connections(_app: Sanic) -> None:
     await _app.ctx.redis.close()
 
 
+def is_cross_origin_write(method: str, origin: str | None, host: str) -> bool:
+    """Return whether a state-changing request names another site in its Origin header."""
+    # SameSite=Strict still sends the cookie from sibling *.mkeda.me sites; Origin names the actual sender.
+    # Browsers send "null" under Referrer-Policy: no-referrer, so it proves nothing; the CSRF token covers that case.
+    return method in UNSAFE_METHODS and origin not in (None, "null") and urlsplit(origin).netloc != host
+
+
 @app.middleware("request")
 async def on_request(request: Request) -> None:
     """Reject cross-origin writes, then set user value for templates."""
-    # SameSite=Strict still sends the cookie from sibling *.mkeda.me sites; Origin names the actual sender.
-    origin = request.headers.get("origin")
-    if request.method in UNSAFE_METHODS and origin and urlsplit(origin).netloc != request.host:
+    if is_cross_origin_write(request.method, request.headers.get("origin"), request.host):
         raise SanicException("Cross-origin request blocked", 403)
 
     await session.interface.open(request)

@@ -395,3 +395,14 @@ def test_password_hashes_use_own_salt_and_still_verify_legacy_ones():
 def test_cross_origin_post_is_rejected():
     _, response = app.test_client.post("/", headers={"Origin": "https://other.mkeda.me"}, allow_redirects=False)
     assert response.status == 403
+
+
+def test_cross_origin_check_allows_same_origin_and_null_origin():
+    from admin.app import is_cross_origin_write
+
+    host = "admin.mkeda.me"
+    assert is_cross_origin_write("POST", "https://chat.mkeda.me", host)
+    assert not is_cross_origin_write("POST", "https://admin.mkeda.me", host)
+    assert not is_cross_origin_write("POST", "null", host)  # Sent by browsers under Referrer-Policy: no-referrer.
+    assert not is_cross_origin_write("POST", None, host)
+    assert not is_cross_origin_write("GET", "https://chat.mkeda.me", host)
