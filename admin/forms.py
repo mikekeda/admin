@@ -8,3 +8,7 @@ class LoginForm(SanicForm):
 
     username = StringField("Username", validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired()])
+
+
+class CSRFForm(SanicForm):
+    """CSRF token only, for POSTs whose fields are built dynamically (repo and package checkboxes)."""

@@ -59,6 +59,8 @@ SANIC_CONFIG = {
     "DB_DATABASE": get_env_var("DB_NAME", "admin"),
     "redis": "redis://127.0.0.1/8",
     "RESPONSE_TIMEOUT": 120,
+    # The dashboard stays open for hours; the 30-minute default would reject its update forms.
+    "WTF_CSRF_TIME_LIMIT": 12 * 3600,
 }
 
 # CELERY STUFF

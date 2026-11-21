@@ -1,5 +1,8 @@
+from urllib.parse import urlsplit
+
 from redis import asyncio as aioredis
 from sanic import Sanic, response
+from sanic.exceptions import SanicException
 from sanic.log import logger
 from sanic.request import Request
 from sanic_jinja2 import SanicJinja2
@@ -9,6 +12,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 from admin.settings import DEBUG, SANIC_CONFIG, SERVER_IP
 from admin.template_tags import any_in
+
+UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
 
 app = Sanic("admin")
 app.config.update(SANIC_CONFIG)
@@ -123,7 +128,12 @@ async def close_redis_connections(_app: Sanic) -> None:
 
 @app.middleware("request")
 async def on_request(request: Request) -> None:
-    """Set user value for templates."""
+    """Reject cross-origin writes, then set user value for templates."""
+    # SameSite=Strict still sends the cookie from sibling *.mkeda.me sites; Origin names the actual sender.
+    origin = request.headers.get("origin")
+    if request.method in UNSAFE_METHODS and origin and urlsplit(origin).netloc != request.host:
+        raise SanicException("Cross-origin request blocked", 403)
+
     await session.interface.open(request)
     request.ctx.user = request.ctx.session.get("user")
     request.ctx.conn = await request.app.ctx.engine.connect()

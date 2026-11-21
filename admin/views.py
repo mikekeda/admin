@@ -14,7 +14,7 @@ from sanic.views import HTTPMethodView
 from sqlalchemy import and_, select
 
 from admin.app import app, jinja
-from admin.forms import LoginForm
+from admin.forms import CSRFForm, LoginForm
 from admin.models import Metric, Repo, JenkinsBuild, BuildStatus, authenticate
 from admin.settings import (
     LOGIN_REDIRECT_URL,
@@ -40,6 +40,12 @@ from admin.utils import (
     get_python_version,
     get_npm_status,
 )
+
+
+def require_csrf_token(request) -> None:
+    """Raise 403 unless the submitted form carries a valid CSRF token."""
+    if not CSRFForm(request).validate():
+        raise SanicException("CSRF token missing or expired, reload the page and try again", 403)
 
 
 class HomePageView(HTTPMethodView):
@@ -90,10 +96,12 @@ class HomePageView(HTTPMethodView):
                 last_successful_builds,
                 logs_files,
             ),
+            csrf_form=CSRFForm(request),
         )
 
     # noinspection PyMethodMayBeStatic
     async def post(self, request):
+        require_csrf_token(request)
         backend_update = [k.removeprefix("backend__") for k in request.form if k.startswith("backend__")]
         frontend_update = [k.removeprefix("frontend__") for k in request.form if k.startswith("frontend__")]
         black_update = [k.removeprefix("black__") for k in request.form if k.startswith("black__")]
@@ -193,6 +201,7 @@ async def site_page(request, repo_name: str):
         sites=sites,
         requirements_statuses=requirements_statuses,
         is_black=is_black,
+        csrf_form=CSRFForm(request),
     )
 
 
@@ -239,8 +248,10 @@ async def build_api(request, site: str, build_number: int, status: str) -> respo
 @login_required()
 async def update_requirements_api(request, repo_name: str):
     """Update requirements.txt"""
+    require_csrf_token(request)
+    packages = set(request.form) - {"csrf_token"}
 
-    await update_requirements(repo_name, set(request.form))
+    await update_requirements(repo_name, packages)
 
     return response.redirect(f"/sites/{repo_name}")
 

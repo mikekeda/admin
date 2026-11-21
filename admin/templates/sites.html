@@ -6,6 +6,7 @@
 {% block body %}
 <div class="container homepage mb-5">
   <form method="post">
+  {{ csrf_form.csrf_token }}
 
   <div class="input-field col s12">
     <button class="btn waves-effect waves-light right mb-2" type="submit" name="action">
@@ -108,7 +109,7 @@
             </a>
           {% endfor %}
         </td>
-        <td {% if metric.black_status %}class="tooltipped" data-position="top" data-tooltip="{{ metric.black_status | replace('\n', '<br>') | safe }}"{% endif %}>
+        <td {% if metric.black_status %}class="tooltipped" data-position="top" data-tooltip="{{ metric.black_status }}"{% endif %}>
           {% if metric.black_status %}
           <label>
             <input type="checkbox" name="black__{{ repo.title }}"/>
