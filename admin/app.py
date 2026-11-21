@@ -14,6 +14,7 @@ from admin.settings import DEBUG, SANIC_CONFIG, SERVER_IP
 from admin.template_tags import any_in
 
 UNSAFE_METHODS = frozenset({"POST", "PUT", "PATCH", "DELETE"})
+SESSION_EXPIRY = 7 * 24 * 3600
 
 app = Sanic("admin")
 app.config.update(SANIC_CONFIG)
@@ -31,7 +32,7 @@ class RedisSessionInterface(BaseSessionInterface):
         self,
         redis,
         domain: str = None,
-        expiry: int = 2592000,
+        expiry: int = SESSION_EXPIRY,
         httponly: bool = True,
         cookie_name: str = "session",
         prefix: str = "session:",

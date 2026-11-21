@@ -30,8 +30,10 @@
           <li class="{% if request.path == '/logs' %}active{% endif %}">
             <a href="/logs" class="{% if request.path == '/logs' %}active{% else %}grey-text{% endif %}">Logs</a>
           </li>
-          <li class="{% if request.path == '/logout' %}active{% endif %}">
-            <a href="/logout" class="{% if request.path == '/logout' %}active{% else %}grey-text{% endif %}">Logout</a>
+          <li>
+            <form class="logout-form" method="post" action="/logout">
+              <button type="submit" class="grey-text">Logout</button>
+            </form>
           </li>
           {% else %}
           <li class="{% if request.path == '/login' %}active{% endif %}">

@@ -364,9 +364,9 @@ async def about_page(request):
     return await jinja.render_async("about.html", request)
 
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 async def logout_page(request):
-    """Logout page."""
+    """Log the user out; POST so that links and prefetches cannot end the session."""
     logout(request)
     return response.redirect(LOGOUT_REDIRECT_URL)
 

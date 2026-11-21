@@ -117,8 +117,10 @@ def test_login_page(setup):
     assert response.headers["Location"] == "/"
     assert request.ctx.session.get("user") is not None
 
-    # Logout.
-    request, response = app.test_client.get("/logout", allow_redirects=False)
+    # Logout is POST-only.
+    _, response = app.test_client.get("/logout", allow_redirects=False)
+    assert response.status == 405
+    request, response = app.test_client.post("/logout", allow_redirects=False)
     assert response.status == 302
     assert response.headers["Location"] == "/login"
     assert request.ctx.session.get("user") is None
