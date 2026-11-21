@@ -107,6 +107,24 @@ body > .container {
 
 #logs_wrapper {
   overflow: hidden;
+
+  // Materialize styles every input as a full-width form field; DataTables' controls need inline sizing.
+  .dt-search input,
+  .dt-length select {
+    width: auto;
+    height: auto;
+    margin: 0 0 0 0.5em;
+    padding: 4px 8px;
+  }
+
+  .dt-length select {
+    opacity: 1; // Materialize hides native selects in favour of its JS dropdown.
+    margin: 0 0.5em 0 0;
+  }
+
+  .dt-layout-row:not(.dt-layout-table) {
+    padding: 0 15px;
+  }
 }
 
 table#logs {
