@@ -126,4 +126,6 @@ table#logs {
 
 .material-tooltip {
   text-align: left;
+  // Tooltips are plain text now; keep the line breaks of multi-line messages such as black's report.
+  white-space: pre-line;
 }

@@ -16,8 +16,8 @@
     google.charts.load('current', {'packages':['corechart']});
     google.charts.setOnLoadCallback(drawCharts);
 
-    const _pings = {{ pings|safe }};
-    const _statuses = {{ statuses|safe }};
+    const _pings = {{ pings|tojson }};
+    const _statuses = {{ statuses|tojson }};
 
     function drawCharts() {
         drawChart('Ping', 'ping (ms)', 'ping_div', _pings, 1008, 500);
