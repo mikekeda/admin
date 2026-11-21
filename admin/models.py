@@ -6,7 +6,7 @@ import secrets
 import string
 from typing import Optional
 
-from bcrypt import hashpw
+from bcrypt import checkpw, gensalt, hashpw
 from sqlalchemy import (
     ARRAY,
     Boolean,
@@ -23,6 +23,7 @@ from sqlalchemy import (
     and_,
     or_,
     insert,
+    update,
     UniqueConstraint,
 )
 from sqlalchemy.engine import Row
@@ -36,17 +37,40 @@ Base = declarative_base()
 
 
 def hash_password(value: str) -> str:
-    """Hash user password to store hash in a database."""
-    return hashpw(value.encode("utf-8"), SECRET_KEY.encode("utf-8")).decode("utf-8")
+    """Hash a password or API key with its own random salt."""
+    return hashpw(value.encode("utf-8"), gensalt()).decode("utf-8")
+
+
+def check_password(value: str, hashed: str) -> bool:
+    """Return whether value matches the stored bcrypt hash."""
+    try:
+        return checkpw(value.encode("utf-8"), hashed.encode("utf-8"))
+    except ValueError:  # bcrypt 5 rejects inputs over 72 bytes; treat them as a failed match, not a 500.
+        return False
+
+
+def _uses_shared_salt(hashed: str) -> bool:
+    """Return whether the hash predates per-user salts (those all used SECRET_KEY as the salt)."""
+    return hashed.startswith(SECRET_KEY)
+
+
+_DUMMY_HASH = hash_password(secrets.token_hex(16))
 
 
 async def authenticate(conn: AsyncConnection, username: str, password: str) -> Optional[Row]:
     """If the given credentials are valid, return a User object."""
     user = (await conn.execute(select(User).where(User.username == username))).fetchone()
-    if user and user.password == hash_password(password):
-        return user
+    if user is None:
+        check_password(password, _DUMMY_HASH)  # Same bcrypt cost as a real user, so timing does not reveal usernames.
+        return None
 
-    return None
+    if not check_password(password, user.password):
+        return None
+
+    if _uses_shared_salt(user.password):
+        await conn.execute(update(User).where(User.id == user.id).values(password=hash_password(password)))
+
+    return user
 
 
 class BuildStatus(enum.Enum):
@@ -166,7 +190,7 @@ class APIKey(Base):
             )
         ).first()
 
-        if api_key and api_key.hashed_key == hash_password(key):
+        if api_key and check_password(key, api_key.hashed_key):
             return (await ex(select(User).where(User.id == api_key.user_id))).one()
 
         return None

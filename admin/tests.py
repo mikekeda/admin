@@ -374,3 +374,24 @@ def test_api_authentication_does_not_log_in(monkeypatch):
     assert asyncio.run(endpoint(request)) == {"id": 1, "username": "jenkins"}
     assert not request.ctx.session and not request.ctx.session.modified
     assert asyncio.run(endpoint(make_request("bad"))).status == 403
+
+
+def test_password_hashes_use_own_salt_and_still_verify_legacy_ones():
+    from bcrypt import hashpw
+    from admin import models
+
+    legacy = hashpw(b"secret", models.SECRET_KEY.encode()).decode()
+    assert models.check_password("secret", legacy)
+    assert models._uses_shared_salt(legacy)
+
+    first, second = models.hash_password("secret"), models.hash_password("secret")
+    assert first != second
+    assert not models._uses_shared_salt(first)
+    assert models.check_password("secret", first)
+    assert not models.check_password("wrong", first)
+    assert not models.check_password("x" * 100, first)
+
+
+def test_cross_origin_post_is_rejected():
+    _, response = app.test_client.post("/", headers={"Origin": "https://other.mkeda.me"}, allow_redirects=False)
+    assert response.status == 403

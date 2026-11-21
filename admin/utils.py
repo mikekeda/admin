@@ -31,6 +31,8 @@ from admin.settings import (
 )
 
 REQUIREMENTS_FILES = ("requirements.txt", "requirements-dev.txt")
+# Pinned by sites but published without wheels (checked 2026-11); everything else must resolve to a wheel.
+SDIST_ALLOWED = ("flask-testing", "langid", "pylint-flask")
 # Only exact pins are auto-updated; extras stay on the line but are not part of the PyPI project name.
 REQUIREMENT_RE = re.compile(r"^(?P<name>[A-Za-z0-9][A-Za-z0-9._-]*)(?P<extras>\[[^\]]*\])?==(?P<version>\S+)$")
 # Matches pylint's default ("f.py:1:0: C0114:") and parseable ("f.py:1: [C0114(...)") formats.
@@ -338,6 +340,10 @@ async def check_requirements_installable(folder_name: str) -> None:
         "--quiet",
         "--no-cache-dir",
         "--disable-pip-version-check",
+        # Building an sdist runs its setup.py; wheels resolve without executing package code.
+        "--only-binary",
+        ":all:",
+        *[arg for name in SDIST_ALLOWED for arg in ("--no-binary", name)],
         *requirement_args,
         cwd=folder_name,
         stdout=asyncio.subprocess.PIPE,
@@ -455,7 +461,7 @@ async def update_frontend(repo_name: str) -> None:
     folder = repo_to_folder(repo_name)
     await asyncio.to_thread(sync_with_remote, folder)
     proc = await asyncio.create_subprocess_shell(
-        f"cd {quote(folder)}/static && npm update --save",
+        f"cd {quote(folder)}/static && npm update --save --ignore-scripts",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
